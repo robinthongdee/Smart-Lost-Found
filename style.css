@@ -1,7 +1,5 @@
-:root{--bg:#f4f7ff;--sf:#fff;--ink:#1b1f4b;--mut:#5d6491;--ln:#e1e6fb;--ac:#4f46e5;--acs:#e8e7ff;--lost:#c2410c;--losts:#ffe4d6;--found:#0d9488;--founds:#d3f5ef;--ok:#15803d;
+:root{color-scheme:light;--bg:#f4f7ff;--sf:#fff;--ink:#1b1f4b;--mut:#5d6491;--ln:#e1e6fb;--ac:#4f46e5;--acs:#e8e7ff;--lost:#c2410c;--losts:#ffe4d6;--found:#0d9488;--founds:#d3f5ef;--ok:#15803d;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1621;--sf:#17212f;--ink:#e8edf4;--mut:#9aa7b8;--ln:#2a3748;--ac:#3dd1c0;--acs:#12332f;--lost:#f5a84b;--losts:#3a2a12;--found:#3dd1c0;--founds:#12332f;--ok:#4ade80}}
-:root[data-theme="dark"]{--bg:#0e1621;--sf:#17212f;--ink:#e8edf4;--mut:#9aa7b8;--ln:#2a3748;--ac:#3dd1c0;--acs:#12332f;--lost:#f5a84b;--losts:#3a2a12;--found:#3dd1c0;--founds:#12332f;--ok:#4ade80}
 *{box-sizing:border-box}html{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans Thai",system-ui,sans-serif}
 header{background:linear-gradient(90deg,#1e1b6e,#3b32c9);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
