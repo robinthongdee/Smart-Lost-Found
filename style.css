@@ -3,7 +3,14 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 *{box-sizing:border-box}html{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans Thai",system-ui,sans-serif}
 header{background:linear-gradient(90deg,#1e1b6e,#3b32c9);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-.w{max-width:880px;margin:0 auto;padding:0 16px}
+
+.w {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap}
 .logo{font-weight:700;font-size:1.15rem;display:flex;gap:8px;align-items:center}
 .logo i{font-style:normal;background:#ffc934;color:#1e1b6e;border-radius:8px;padding:0 8px}
