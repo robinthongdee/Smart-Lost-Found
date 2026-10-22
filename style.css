@@ -1,16 +1,8 @@
 :root{color-scheme:light;--bg:#f4f7ff;--sf:#fff;--ink:#1b1f4b;--mut:#5d6491;--ln:#e1e6fb;--ac:#4f46e5;--acs:#e8e7ff;--lost:#c2410c;--losts:#ffe4d6;--found:#0d9488;--founds:#d3f5ef;--ok:#15803d;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-*{box-sizing:border-box}html{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans Thai",system-ui,sans-serif}
-header{background:linear-gradient(90deg,#1e1b6e,#3b32c9);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-
-.w {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
+*{box-sizing:border-box}html{height:100%;width:100%;overflow-x:hidden}body{width:100%;min-width:0;overflow-x:hidden;margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans Thai",system-ui,sans-serif}
+header{display:block;width:100%;max-width:100%;background:linear-gradient(90deg,#1e1b6e,#3b32c9);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.w{width:100%;max-width:1200px;margin:0 auto;padding:0 16px}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap}
 .logo{font-weight:700;font-size:1.15rem;display:flex;gap:8px;align-items:center}
 .logo i{font-style:normal;background:#ffc934;color:#1e1b6e;border-radius:8px;padding:0 8px}
