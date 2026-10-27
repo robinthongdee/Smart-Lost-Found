@@ -2,21 +2,13 @@ var ST=["กำลังตามหา","พบแล้ว","ติดต่�
 var CAT={"โทรศัพท์":"📱","กระเป๋า":"👜","กุญแจ":"🔑","บัตรนักศึกษา":"🪪","อื่น ๆ":"📦"};
 var PL=["ห้องเรียน","โรงอาหาร","ห้องสมุด","ลานจอดรถ","อาคารกิจกรรม","สนามกีฬา"];
 function ago(d,h){var t=new Date();t.setDate(t.getDate()-d);t.setHours(h,0,0,0);return t.toISOString()}
-var items=[
-{id:1,mine:1,kind:"lost",name:"iPhone เคสสีฟ้า",cat:"โทรศัพท์",place:"โรงอาหาร",at:ago(1,12),desc:"หน้าจอมีรอยร้าวมุมขวา ล็อกสกรีนเป็นรูปแมว",contact:"081-234-5678 (มายด์)",st:0},
-{id:2,kind:"found",name:"บัตรนักศึกษา",cat:"บัตรนักศึกษา",place:"ห้องสมุด",at:ago(0,9),desc:"พบบริเวณโต๊ะอ่านหนังสือชั้น 2 คณะวิทยาศาสตร์",contact:"LINE: finder_lib",st:1},
-{id:3,kind:"lost",name:"กุญแจรถมอเตอร์ไซค์ พวงกุญแจหมี",cat:"กุญแจ",place:"ลานจอดรถ",at:ago(2,16),desc:"พวงกุญแจตุ๊กตาหมีสีน้ำตาล มีกุญแจห้อง 2 ดอก",contact:"089-111-2222 (ต้น)",st:0},
-{id:4,kind:"found",name:"กระเป๋าผ้าสีดำ",cat:"กระเป๋า",place:"ห้องเรียน",at:ago(1,15),desc:"มีสมุดโน้ตและกล่องดินสอ ฝากไว้ที่เคาน์เตอร์อาคารเรียนรวม",contact:"ห้องธุรการ โทร 043-000-000",st:1},
-{id:5,kind:"found",name:"โทรศัพท์ Samsung สีดำ",cat:"โทรศัพท์",place:"สนามกีฬา",at:ago(0,17),desc:"พบข้างสนามบาสเกตบอล แบตเหลือน้อย",contact:"LINE: bball_found",st:2},
-{id:6,kind:"lost",name:"กระเป๋าสตางค์สีน้ำตาล",cat:"กระเป๋า",place:"อาคารกิจกรรม",at:ago(3,11),desc:"ข้างในมีบัตรประชาชนและบัตรเอทีเอ็ม",contact:"085-999-8888 (ฝน)",st:3},
-{id:7,kind:"found",name:"iPhone สีฟ้า เคสใส",cat:"โทรศัพท์",place:"โรงอาหาร",at:ago(0,8),desc:"พบบนโต๊ะริมหน้าต่าง ฝากไว้ที่ร้านน้ำชั้น 1 ล็อกสกรีนเป็นรูปแมว",contact:"LINE: canteen_found",st:1},
-{id:8,mine:1,kind:"lost",name:"AirPods เคสสีขาว",cat:"อื่น ๆ",place:"ห้องสมุด",at:ago(0,13),desc:"ติดสติกเกอร์ดาวสีเหลืองที่ฝาเคส น่าจะหล่นแถวชั้น 3 โซนเงียบ",contact:"LINE: nong_air",st:0},
-{id:9,kind:"found",name:"ร่มพับสีเหลือง",cat:"อื่น ๆ",place:"ห้องเรียน",at:ago(2,10),desc:"ลืมไว้ใต้โต๊ะห้อง 304 อาคารเรียนรวม มีชื่อ “พิม” เขียนที่ด้ามจับ",contact:"ห้องธุรการ โทร 043-000-000",st:1},
-{id:10,kind:"lost",name:"แว่นตากรอบดำ ในกล่องสีฟ้า",cat:"อื่น ๆ",place:"สนามกีฬา",at:ago(1,18),desc:"สายตาสั้น ค่า -3.50 กล่องแข็งสีฟ้ามีชื่อร้านแว่นพิมพ์อยู่",contact:"089-555-0101 (บอส)",st:0},
-{id:11,kind:"found",name:"พาวเวอร์แบงค์สีเทา 10000mAh",cat:"อื่น ๆ",place:"ลานจอดรถ",at:ago(0,7),desc:"พบใต้ที่นั่งจักรยานยนต์ ฝากไว้ที่ป้อม รปภ. หน้าประตู 2",contact:"ป้อม รปภ. โทร 043-111-111",st:1}];
-var nid=12,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,unread=0;
-try{var sv=localStorage.getItem("slf3");if(sv){var o=JSON.parse(sv);items=o.items||items;notes=o.notes||[];nid=o.nid||nid}}catch(e){}
-function save(){try{localStorage.setItem("slf3",JSON.stringify({items:items,notes:notes,nid:nid}))}catch(e){}}
+var sb=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk");
+var items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,unread=0;
+try{var sv=localStorage.getItem("slf4");if(sv)notes=JSON.parse(sv).notes||[]}catch(e){}
+function save(){try{localStorage.setItem("slf4",JSON.stringify({notes:notes}))}catch(e){}}
+function fix(x){x.mine=x.owner===uid?1:0;return x}
+async function load(){var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data.map(fix)}
+async function init(){try{var s=await sb.auth.getSession();if(!s.data.session){var a=await sb.auth.signInAnonymously();if(a.error)throw a.error;uid=a.data.user.id}else uid=s.data.session.user.id;await load()}catch(e){toast("เชื่อมต่อ Supabase ไม่สำเร็จ: "+(e.message||e))}render()}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function fd(s){return new Date(s).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+" น."}
 function $(i){return document.getElementById(i)}
@@ -55,10 +47,12 @@ $("n").focus()}
 function pick(el){var fl=el.files[0];if(!fl)return;var r=new FileReader();r.onload=function(){img=r.result;$("pv").innerHTML='<img src="'+img+'" alt="ตัวอย่างรูป" style="max-width:160px;border-radius:10px">'};r.readAsDataURL(fl)}
 function words(s){return s.toLowerCase().split(/\s+/).filter(function(w){return w.length>1})}
 function match(a,b){if(a.draft||b.draft||a.kind===b.kind||a.cat!==b.cat)return false;if(a.place===b.place)return true;var w=words(a.name);return w.some(function(x){return b.name.toLowerCase().indexOf(x)>-1})}
-function submit(dr){var n=$("n").value.trim(),t=$("t").value.trim();
+async function submit(dr){var n=$("n").value.trim(),t=$("t").value.trim();
 if(!n){toast("กรุณากรอกชื่อสิ่งของ");$("n").focus();return}
 if(!t){toast("กรุณาระบุช่องทางติดต่อ");$("t").focus();return}
-var it={id:nid++,kind:mode,name:n,cat:$("c").value,place:$("p").value,at:new Date($("d").value||Date.now()).toISOString(),desc:$("x").value.trim()||"ไม่มีรายละเอียดเพิ่มเติม",contact:t,st:mode==="lost"?0:1,img:img,mine:1,draft:!!dr};
+var r=await sb.from("items").insert({kind:mode,name:n,cat:$("c").value,place:$("p").value,at:new Date($("d").value||Date.now()).toISOString(),desc:$("x").value.trim()||"ไม่มีรายละเอียดเพิ่มเติม",contact:t,st:mode==="lost"?0:1,img:img,draft:!!dr}).select().single();
+if(r.error){toast("บันทึกไม่สำเร็จ: "+r.error.message);return}
+var it=fix(r.data);
 var ms=items.filter(function(o){return o.st<3&&match(it,o)});items.push(it);
 ms.forEach(function(o){notes.unshift({a:it.id,b:o.id});unread++});
 save();f={q:"",cat:"",place:"",kind:""};go(dr?"mine":"feed");
@@ -74,10 +68,10 @@ $("md").innerHTML=thumb(i)+'<div class="cb"><span class="tag '+i.kind+'">'+(i.ki
 '<div style="display:flex;gap:8px;flex-wrap:wrap">'+(i.draft?'<button class="pri" onclick="pub('+i.id+')">ประกาศเลย</button>':i.st<3?(i.mine?'<button class="pri" onclick="adv('+i.id+')">อัปเดตเป็น “'+ST[i.st+1]+'”</button>':'<span class="m">เฉพาะเจ้าของประกาศที่อัปเดตสถานะได้</span>'):'<span class="m">รายการนี้ปิดแล้ว คืนของเรียบร้อย</span>')+'<button class="sec" onclick="cp('+i.id+')">คัดลอกช่องทางติดต่อ</button><button class="sec" onclick="closeD()">ปิด</button></div></div>';
 $("mo").classList.add("on")}
 function closeD(){$("mo").classList.remove("on")}
-function pub(id){var i=get(id);i.draft=false;var ms=items.filter(function(o){return o.st<3&&match(i,o)});ms.forEach(function(o){notes.unshift({a:i.id,b:o.id});unread++});save();closeD();toast(ms.length?"ประกาศแล้ว พบ "+ms.length+" รายการที่อาจตรงกัน":"ประกาศเรียบร้อยแล้ว");render()}
+async function pub(id){var i=get(id);var r=await sb.from("items").update({draft:false}).eq("id",id);if(r.error){toast("ประกาศไม่สำเร็จ: "+r.error.message);return}i.draft=false;var ms=items.filter(function(o){return o.st<3&&match(i,o)});ms.forEach(function(o){notes.unshift({a:i.id,b:o.id});unread++});save();closeD();toast(ms.length?"ประกาศแล้ว พบ "+ms.length+" รายการที่อาจตรงกัน":"ประกาศเรียบร้อยแล้ว");render()}
 $("mo").addEventListener("click",function(e){if(e.target===this)closeD()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeD()});
-function adv(id){var i=get(id);if(i.st<3){i.st++;save();if(i.st===3){closeD();toast("คืนของเรียบร้อย รายการถูกนำออกจากหน้าค้นหาแล้ว")}else{toast("อัปเดตสถานะเป็น “"+ST[i.st]+"” แล้ว");openD(id)}render()}}
+async function adv(id){var i=get(id);if(i.st<3){var r=await sb.from("items").update({st:i.st+1}).eq("id",id);if(r.error){toast("อัปเดตไม่สำเร็จ: "+r.error.message);return}i.st++;save();if(i.st===3){closeD();toast("คืนของเรียบร้อย รายการถูกนำออกจากหน้าค้นหาแล้ว")}else{toast("อัปเดตสถานะเป็น “"+ST[i.st]+"” แล้ว");openD(id)}render()}}
 function mineV(){var my=items.filter(function(i){return i.mine}).sort(function(a,b){return new Date(b.at)-new Date(a.at)}),dn=my.filter(function(i){return i.st===3&&!i.draft}).length,dr=my.filter(function(i){return i.draft}).length;
 $("app").innerHTML='<h1>ของฉัน</h1><p class="s">รายการที่คุณประกาศ ติดตามและอัปเดตสถานะได้ที่นี่ รายการที่คืนแล้วเก็บไว้ในหน้านี้</p><div class="stats kp"><span><b>'+my.length+'</b> ทั้งหมด</span><span><b>'+dn+'</b> คืนแล้ว</span><span><b>'+dr+'</b> ฉบับร่าง</span></div>'+(my.length?'<div class="g" style="margin-top:14px">'+my.map(card).join("")+'</div>':'<div class="em">ยังไม่มีรายการของคุณ กดแจ้งของหายหรือแจ้งของที่พบเพื่อเริ่มต้น</div>')}
 function notesV(){var h='<h1>แจ้งเตือน</h1><p class="s">เมื่อมีรายการที่ตรงหรือใกล้เคียงกับที่คุณประกาศ จะแสดงที่นี่</p>';
@@ -86,4 +80,4 @@ return '<div class="nt"><div>ประกาศ “'+esc(a.name)+'” อาจ�
 $("app").innerHTML=h}
 function render(){nav();view==="feed"?feed():view==="form"?form():view==="mine"?mineV():notesV()}
 document.addEventListener("click",function(e){var b=e.target.closest("button");if(!b||matchMedia("(prefers-reduced-motion:reduce)").matches)return;var r=b.getBoundingClientRect(),s=document.createElement("span"),d=Math.max(r.width,r.height)*2;s.className="rp";s.style.cssText="width:"+d+"px;height:"+d+"px;left:"+(e.clientX-r.left-d/2)+"px;top:"+(e.clientY-r.top-d/2)+"px";b.appendChild(s);setTimeout(function(){s.remove()},600)});
-render();
+init();
