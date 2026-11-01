@@ -105,7 +105,7 @@ h+=td.map(function(t){return '<div class="nt tdo"><div>'+t.txt+'</div><button cl
 h+=ps.length?ps.map(function(p){var a=get(p.a),b=get(p.b);
 return '<div class="nt ai"><div class="nb"><div>ประกาศ “'+esc(a.name)+'” อาจตรงกับ<br><b>'+esc(b.name)+'</b> <span class="m">('+(b.kind==="found"?"พบที่":"หายที่")+" "+esc(b.place)+')</span></div><div id="ai-'+p.k+'"></div></div><div class="na"><button class="pri" onclick="openD('+b.id+')">ดู</button><button class="sec" onclick="aiCheck('+a.id+','+b.id+')">🤖 ให้ AI ตรวจ</button></div></div>'}).join(""):td.length?'':'<div class="em">ยังไม่มีการแจ้งเตือน ลองแจ้งของหายหรือของที่พบเพื่อดูการจับคู่</div>';
 $("app").innerHTML=h;Object.keys(aiR).forEach(aiShow)}
-var CONTACT_EMAIL="ใส่อีเมลผู้ดูแลระบบที่นี่";
+var CONTACT_EMAIL="อีเมลของคุณ@example.com";
 var me={anon:true,email:""},aiR={};
 function setMe(u){uid=u.id;me={anon:!!u.is_anonymous,email:u.email||""}}
 function acc(){var b=$("acc");b.className="acc"+(view==="acct"?" on":"");b.textContent="👤 "+(me.anon?"บัญชี":me.email)}
