@@ -1,6 +1,6 @@
 // Vercel Serverless Function: จับคู่ของหาย/ของที่พบด้วย AI (Gemini)
 // API key เก็บใน Environment Variable (GEMINI_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
-var MODEL = process.env.AI_MODEL || "gemini-2.5-flash";
+var MODEL = process.env.AI_MODEL || "gemini-3.8-flash";
 var SB_URL = process.env.SUPABASE_URL || "https://htxdnqhzyaxuvomziqzr.supabase.co";
 var SB_KEY = process.env.SUPABASE_KEY || "sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk";
 var VERDICTS = ["match", "maybe", "no_match", "insufficient", "out_of_scope"];
@@ -85,12 +85,13 @@ module.exports = async function (req, res) {
   var payload = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: "user", parts: [{ text: box("item_a", a) + "\n" + box("item_b", b) }] }],
-generationConfig: {
-  temperature: 0,
-  maxOutputTokens: 1000,
-  responseMimeType: "application/json",
-  thinkingConfig: { thinkingLevel: "low" }
-};
+    generationConfig: {
+      temperature: 0,
+      maxOutputTokens: 1000,
+      responseMimeType: "application/json",
+      thinkingConfig: { thinkingLevel: "low" }
+    }
+  };
 
   var j;
   try {
