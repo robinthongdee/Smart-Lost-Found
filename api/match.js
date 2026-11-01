@@ -1,6 +1,6 @@
-// Vercel Serverless Function: จับคู่ของหาย/ของที่พบด้วย AI
-// API key เก็บใน Environment Variable (ANTHROPIC_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
-var MODEL = process.env.AI_MODEL || "claude-haiku-5-5";
+// Vercel Serverless Function: จับคู่ของหาย/ของที่พบด้วย AI (Gemini)
+// API key เก็บใน Environment Variable (GEMINI_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
+var MODEL = process.env.AI_MODEL || "gemini-2.5-flash";
 var SB_URL = process.env.SUPABASE_URL || "https://htxdnqhzyaxuvomziqzr.supabase.co";
 var SB_KEY = process.env.SUPABASE_KEY || "sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk";
 var VERDICTS = ["match", "maybe", "no_match", "insufficient", "out_of_scope"];
@@ -35,12 +35,10 @@ function clean(o) {
   return r.name ? r : null;
 }
 
-// ครอบข้อมูลผู้ใช้เป็น JSON ในแท็ก และ escape "<" เพื่อไม่ให้ข้อความผู้ใช้ปิดแท็กหรือปลอมแท็กได้
 function box(tag, o) {
   return "<" + tag + ">" + JSON.stringify(o).replace(/</g, "\\u003c") + "</" + tag + ">";
 }
 
-// ตรวจว่าผู้เรียกล็อกอิน Supabase แล้ว (รวมบัญชีไม่ระบุตัวตน) เพื่อไม่ให้ endpoint เปิดให้ใครก็ได้ยิง
 async function authed(req) {
   var m = (req.headers.authorization || "").match(/^Bearer (\S+)$/);
   if (!m) return false;
@@ -54,12 +52,12 @@ async function authed(req) {
 
 async function ask(p, key) {
   var ac = new AbortController();
-  var t = setTimeout(function () { ac.abort(); }, 8000);
+  var t = setTimeout(function () { ac.abort(); }, 9000);
   try {
-    return await fetch("https://api.anthropic.com/v1/messages", {
+    return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
       method: "POST",
       signal: ac.signal,
-      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify(p)
     });
   } finally {
@@ -74,8 +72,8 @@ module.exports = async function (req, res) {
     return res.status(405).json({ error: "method not allowed" });
   }
   if (!(await authed(req))) return res.status(401).json({ error: "กรุณาเข้าใช้งานระบบก่อน" });
-  var key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return res.status(500).json({ error: "เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า ANTHROPIC_API_KEY" });
+  var key = process.env.GEMINI_API_KEY;
+  if (!key) return res.status(500).json({ error: "เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า GEMINI_API_KEY" });
 
   var body = req.body;
   if (typeof body === "string") {
@@ -85,23 +83,22 @@ module.exports = async function (req, res) {
   if (!a || !b || a.kind === b.kind) return res.status(400).json({ error: "ข้อมูลไม่ถูกต้อง (ต้องเป็นของหาย 1 รายการ และของที่พบ 1 รายการ)" });
 
   var payload = {
-    model: MODEL,
-    max_tokens: 300,
-    temperature: 0,
-    system: SYSTEM,
-    messages: [{ role: "user", content: box("item_a", a) + "\n" + box("item_b", b) }]
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: "user", parts: [{ text: box("item_a", a) + "\n" + box("item_b", b) }] }],
+    generationConfig: {
+      temperature: 0,
+      maxOutputTokens: 1000,
+      responseMimeType: "application/json"
+    }
   };
 
   var j;
   try {
     var r = await ask(payload, key);
-    if (r.status === 400) {
-      var t = await r.text();
-      if (!/temperature/i.test(t)) return res.status(502).json({ error: "AI ปฏิเสธคำขอ" });
-      delete payload.temperature; // บางโมเดลไม่รับ temperature ให้ลองใหม่โดยไม่ส่ง
-      r = await ask(payload, key);
+    if (!r.ok) {
+      console.error("Gemini error", r.status, await r.text());
+      return res.status(502).json({ error: "AI ตอบกลับผิดพลาด (" + r.status + ")" });
     }
-    if (!r.ok) return res.status(502).json({ error: "AI ตอบกลับผิดพลาด (" + r.status + ")" });
     j = await r.json();
   } catch (e) {
     return res.status(502).json({ error: e && e.name === "AbortError" ? "AI ตอบช้าเกินไป ลองใหม่อีกครั้ง" : "เรียก AI ไม่สำเร็จ" });
@@ -109,7 +106,8 @@ module.exports = async function (req, res) {
 
   var o;
   try {
-    var txt = (j.content || []).map(function (c) { return c.text || ""; }).join("");
+    var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+    var txt = parts.map(function (c) { return c.text || ""; }).join("");
     o = JSON.parse(txt.match(/\{[\s\S]*\}/)[0]);
   } catch (e) {
     return res.status(502).json({ error: "AI ตอบในรูปแบบที่อ่านไม่ได้ ลองใหม่อีกครั้ง" });
@@ -118,7 +116,6 @@ module.exports = async function (req, res) {
 
   var score = o.verdict === "out_of_scope" ? 0 : Math.max(0, Math.min(100, Math.round(Number(o.score) || 0)));
   var reason = String(o.reason || "").slice(0, 300);
-  // กันกรณีโมเดลหลุดพูดถึงคำสั่งภายใน
   if (/item_a|item_b|untrusted|system prompt/i.test(reason)) reason = "ไม่สามารถประเมินได้จากข้อมูลที่ให้";
   var missing = Array.isArray(o.missing) ? o.missing.slice(0, 3).map(function (s) { return String(s).slice(0, 80); }) : [];
 
