@@ -3,7 +3,7 @@ var CAT={"โทรศัพท์":"📱","กระเป๋า":"👜","ก�
 var PL=["ห้องเรียน","โรงอาหาร","ห้องสมุด","ลานจอดรถ","อาคารกิจกรรม","สนามกีฬา"];
 function ago(d,h){var t=new Date();t.setDate(t.getDate()-d);t.setHours(h,0,0,0);return t.toISOString()}
 var sb=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk");
-var items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,seen=[];
+var items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,seen=[],editId=null;
 try{var sv=localStorage.getItem("slf4");if(sv)seen=JSON.parse(sv).seen||[]}catch(e){}
 function save(){try{localStorage.setItem("slf4",JSON.stringify({seen:seen}))}catch(e){}}
 function pairs(){var o=[];items.forEach(function(a){if(!a.mine||a.draft||a.st>2)return;items.forEach(function(b){if(b.id!==a.id&&b.st<3&&match(a,b))o.push({a:a.id,b:b.id,k:a.id+"-"+b.id})})});return o}
@@ -19,7 +19,7 @@ function rel(s){var m=Math.round((Date.now()-new Date(s))/6e4);if(m<1)return"เ
 function mp(i){if(i.st>2||i.draft)return'';var n=items.filter(function(o){return o.st<3&&match(i,o)}).length;return n?' <span class="tag mt">✨ อาจตรง '+n+'</span>':''}
 function cp(id){var i=get(id),e=function(){toast("คัดลอกไม่สำเร็จ ลองเลือกข้อความด้วยตนเอง")};try{navigator.clipboard.writeText(i.contact).then(function(){toast("คัดลอกช่องทางติดต่อแล้ว")},e)}catch(x){e()}}
 function toast(m){var t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none"},2800)}
-function go(v,m){view=v;if(m)mode=m;img=null;if(v==="notes")markSeen();render()}
+function go(v,m){view=v;if(m)mode=m;img=null;editId=null;if(v==="notes")markSeen();render()}
 function nav(){acc();var n=[["feed","ค้นหา"],["lost","แจ้งของหาย"],["found","แจ้งของที่พบ"],["mine","ของฉัน"],["notes","แจ้งเตือน"]];
 $("nav").innerHTML=n.map(function(x){var on=(view==="form"?mode:view)===x[0];
 return '<button class="'+(on?"on":"")+'" onclick="'+(x[0]==="lost"||x[0]==="found"?"go('form','"+x[0]+"')":"go('"+x[0]+"')")+'">'+x[1]+(x[0]==="notes"&&unreadN()?"<b>"+unreadN()+"</b>":"")+"</button>"}).join("")}
@@ -38,7 +38,7 @@ function list(){var q=f.q.trim().toLowerCase();
 var r=items.filter(function(i){return i.st<3&&!i.draft&&(!f.kind||i.kind===f.kind)&&(!f.cat||i.cat===f.cat)&&(!f.place||i.place===f.place)&&(!f.when||Date.now()-new Date(i.at)<=f.when*864e5)&&(!f.st||i.st===+f.st)&&(!q||(i.name+i.desc+i.cat+i.place+ST[i.st]).toLowerCase().indexOf(q)>-1)}).sort(function(a,b){return new Date(b.at)-new Date(a.at)});
 $("cnt").textContent="พบ "+r.length+" รายการ";$("lst").innerHTML=r.length?r.map(card).join(""):'<div class="em" style="grid-column:1/-1">ไม่พบรายการที่ตรงกัน ลองเปลี่ยนคำค้นหา หรือแจ้งของหายเพื่อให้คนอื่นช่วยตามหา<br><br><button class="pri" onclick="go(\'form\',\'lost\')">แจ้งของหาย</button></div>'}
 function form(){var L=mode==="lost",now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
-$("app").innerHTML='<h1>'+(L?"แจ้งของหาย":"แจ้งของที่พบ")+'</h1><p class="s">'+(L?"กรอกรายละเอียดแล้วประกาศให้ทุกคนช่วยกันตามหา":"ลงข้อมูลของที่พบ เพื่อให้เจ้าของค้นเจอและติดต่อกลับได้")+'</p><div class="fm">'+
+$("app").innerHTML='<h1>'+(editId?"แก้ไขฉบับร่าง":L?"แจ้งของหาย":"แจ้งของที่พบ")+'</h1><p class="s">'+(L?"กรอกรายละเอียดแล้วประกาศให้ทุกคนช่วยกันตามหา":"ลงข้อมูลของที่พบ เพื่อให้เจ้าของค้นเจอและติดต่อกลับได้")+'</p><div class="fm">'+
 '<label>รูปภาพ<input type="file" accept="image/*" onchange="pick(this)"></label><div id="pv"></div>'+
 '<label>ชื่อสิ่งของ<input id="n" maxlength="80" placeholder="เช่น iPhone เคสสีฟ้า"></label>'+
 '<div class="r2"><label>ประเภท<select id="c">'+Object.keys(CAT).map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label><label>สถานที่<select id="p">'+PL.map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label></div>'+
@@ -58,11 +58,22 @@ im.onerror=function(){bad("เปิดไฟล์รูปไม่ได้ �
 r.onerror=function(){bad("อ่านไฟล์ไม่สำเร็จ")};r.readAsDataURL(fl)}
 function words(s){return s.toLowerCase().split(/\s+/).filter(function(w){return w.length>1})}
 function match(a,b){if(a.draft||b.draft||a.kind===b.kind||a.cat!==b.cat)return false;if(a.place===b.place)return true;var w=words(a.name);return w.some(function(x){return b.name.toLowerCase().indexOf(x)>-1})}
+function editD(id){var i=get(id);if(!i)return;editId=id;mode=i.kind;view="form";closeD();render();
+$("n").value=i.name;$("c").value=i.cat;$("p").value=i.place;
+$("d").value=new Date(new Date(i.at).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+$("x").value=i.desc==="ไม่มีรายละเอียดเพิ่มเติม"?"":i.desc;$("t").value=i.contact;img=i.img||null;
+if(img)$("pv").innerHTML='<img src="'+img+'" alt="รูปเดิม" style="max-width:160px;border-radius:10px">'}
 async function submit(dr){var n=$("n").value.trim(),t=$("t").value.trim();
 if(!n){toast("กรุณากรอกชื่อสิ่งของ");$("n").focus();return}
 if(!t){toast("กรุณาระบุช่องทางติดต่อ");$("t").focus();return}
 if(!$("pd").checked){toast("กรุณาติ๊กยินยอมการเก็บข้อมูลก่อน");$("pd").focus();return}
-var r=await sb.from("items").insert({kind:mode,name:n,cat:$("c").value,place:$("p").value,at:new Date($("d").value||Date.now()).toISOString(),desc:$("x").value.trim()||"ไม่มีรายละเอียดเพิ่มเติม",contact:t,st:mode==="lost"?0:1,img:img,draft:!!dr}).select().single();
+var row={kind:mode,name:n,cat:$("c").value,place:$("p").value,at:new Date($("d").value||Date.now()).toISOString(),desc:$("x").value.trim()||"ไม่มีรายละเอียดเพิ่มเติม",contact:t,img:img,draft:!!dr};
+if(editId){var eid=editId,u=await sb.from("items").update(row).eq("id",eid).select().single();
+if(u.error){toast("แก้ไขไม่สำเร็จ: "+u.error.message);return}
+var k=items.findIndex(function(x){return x.id===eid});if(k>=0)items[k]=fix(u.data);aiR={};
+save();f={q:"",cat:"",place:"",kind:""};go(dr?"mine":"feed");toast(dr?"บันทึกฉบับร่างแล้ว":"ประกาศเรียบร้อยแล้ว");return}
+row.st=mode==="lost"?0:1;
+var r=await sb.from("items").insert(row).select().single();
 if(r.error){toast("บันทึกไม่สำเร็จ: "+r.error.message);return}
 var it=fix(r.data);
 var ms=items.filter(function(o){return o.st<3&&match(it,o)});items.push(it);
@@ -76,7 +87,7 @@ $("md").innerHTML=thumb(i)+'<div class="cb"><span class="tag '+i.kind+'">'+(i.ki
 '<dl><dt>ประเภท</dt><dd>'+esc(i.cat)+'</dd><dt>สถานที่</dt><dd>'+esc(i.place)+'</dd><dt>วันที่และเวลา</dt><dd>'+fd(i.at)+'</dd><dt>รายละเอียด</dt><dd>'+esc(i.desc)+'</dd></dl>'+
 '<div class="ct"><div class="m">ติดต่อ'+(i.kind==="lost"?"เจ้าของ":"ผู้พบของ")+'</div><b>'+esc(i.contact)+'</b></div>'+
 (ms.length?'<p class="m">รายการที่อาจตรงกัน: '+ms.map(function(o){return '<a href="#" onclick="openD('+o.id+');return false">'+esc(o.name)+"</a>"}).join(", ")+"</p>":"")+
-'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(i.draft?'<button class="pri" onclick="pub('+i.id+')">ประกาศเลย</button>':i.st<3?(i.mine?'<button class="pri" onclick="adv('+i.id+')">อัปเดตเป็น “'+ST[i.st+1]+'”</button>':'<span class="m">เฉพาะเจ้าของประกาศที่อัปเดตสถานะได้</span>'):'<span class="m">รายการนี้ปิดแล้ว คืนของเรียบร้อย</span>')+'<button class="sec" onclick="cp('+i.id+')">คัดลอกช่องทางติดต่อ</button><button class="sec" onclick="closeD()">ปิด</button></div></div>';
+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(i.draft?'<button class="pri" onclick="pub('+i.id+')">ประกาศเลย</button><button class="sec" onclick="editD('+i.id+')">แก้ไข</button>':i.st<3?(i.mine?'<button class="pri" onclick="adv('+i.id+')">อัปเดตเป็น “'+ST[i.st+1]+'”</button>':'<span class="m">เฉพาะเจ้าของประกาศที่อัปเดตสถานะได้</span>'):'<span class="m">รายการนี้ปิดแล้ว คืนของเรียบร้อย</span>')+'<button class="sec" onclick="cp('+i.id+')">คัดลอกช่องทางติดต่อ</button><button class="sec" onclick="closeD()">ปิด</button></div></div>';
 $("mo").classList.add("on")}
 function closeD(){$("mo").classList.remove("on")}
 async function pub(id){var i=get(id);var r=await sb.from("items").update({draft:false}).eq("id",id);if(r.error){toast("ประกาศไม่สำเร็จ: "+r.error.message);return}i.draft=false;var ms=items.filter(function(o){return o.st<3&&match(i,o)});save();closeD();toast(ms.length?"ประกาศแล้ว พบ "+ms.length+" รายการที่อาจตรงกัน":"ประกาศเรียบร้อยแล้ว");render()}
