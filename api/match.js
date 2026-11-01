@@ -52,7 +52,7 @@ async function authed(req) {
 
 async function ask(p, key) {
   var ac = new AbortController();
-  var t = setTimeout(function () { ac.abort(); }, 9000);
+  var t = setTimeout(function () { ac.abort(); }, 25000);
   try {
     return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
       method: "POST",
@@ -85,12 +85,12 @@ module.exports = async function (req, res) {
   var payload = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: "user", parts: [{ text: box("item_a", a) + "\n" + box("item_b", b) }] }],
-    generationConfig: {
-      temperature: 0,
-      maxOutputTokens: 1000,
-      responseMimeType: "application/json"
-    }
-  };
+generationConfig: {
+  temperature: 0,
+  maxOutputTokens: 1000,
+  responseMimeType: "application/json",
+  thinkingConfig: { thinkingLevel: "low" }
+};
 
   var j;
   try {
