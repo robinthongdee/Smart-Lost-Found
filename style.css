@@ -100,3 +100,8 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px var(--acs)}
 .c .th.has,.c.lost .th.has,.c.found .th.has{position:relative;overflow:hidden;background:#fff}
 .th.has:before{content:"";position:absolute;inset:-24px;background:var(--u) center/cover no-repeat;filter:blur(20px) saturate(1.1);opacity:.9}
 .th.has img{position:relative;z-index:1}
+
+/* รูปเต็มกรอบ ไม่มีแถบสีด้านข้าง */
+.c .th.has,.c.lost .th.has,.c.found .th.has{height:200px;padding:0;background:#f5f5f7;position:relative;overflow:hidden;display:block}
+.c .th.has:before{display:none}
+.c .th.has img{width:100%;height:100%;max-height:none;object-fit:cover;object-position:center;display:block;position:static}
