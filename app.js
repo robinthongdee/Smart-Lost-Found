@@ -23,7 +23,7 @@ function go(v,m){view=v;if(m)mode=m;img=null;editId=null;if(v==="notes")markSeen
 function nav(){acc();var n=[["feed","ค้นหา"],["lost","แจ้งของหาย"],["found","แจ้งของที่พบ"],["mine","ของฉัน"],["notes","แจ้งเตือน"]];
 $("nav").innerHTML=n.map(function(x){var on=(view==="form"?mode:view)===x[0];
 return '<button class="'+(on?"on":"")+'" onclick="'+(x[0]==="lost"||x[0]==="found"?"go('form','"+x[0]+"')":"go('"+x[0]+"')")+'">'+x[1]+(x[0]==="notes"&&unreadN()?"<b>"+unreadN()+"</b>":"")+"</button>"}).join("")}
-function thumb(i){return '<div class="th"'+(i.img?' style="background-image:url('+i.img+')"':"")+">"+(i.img?"":CAT[i.cat]||"📦")+"</div>"}
+function thumb(i){var em=CAT[i.cat]||"📦";return i.img?'<div class="th has"><img src="'+String(i.img).replace(/"/g,"&quot;")+'" alt="'+esc(i.name||"รูปสิ่งของ")+'" loading="lazy" onerror="this.parentNode.classList.remove(\'has\');this.parentNode.textContent=\''+em+'\'"></div>':'<div class="th">'+em+"</div>"}
 function bar(s){return '<div class="st" aria-label="สถานะ: '+ST[s]+'">'+ST.map(function(_,k){return '<span class="'+(k<=s?"d":"")+'"></span>'}).join("")+"</div>"}
 function card(i){return '<button class="c '+i.kind+'" onclick="openD('+i.id+')">'+thumb(i)+'<div class="cb"><span class="tag '+i.kind+'">'+(i.kind==="lost"?"ของหาย":"พบของ")+'</span> <span class="m">'+ST[i.st]+'</span>'+mp(i)+(i.draft?' <span class="tag mt">ฉบับร่าง</span>':'')+'<h3>'+esc(i.name)+'</h3><div class="m">📍 '+esc(i.place)+" · "+rel(i.at)+"</div>"+bar(i.st)+"</div></button>"}
 function feed(){

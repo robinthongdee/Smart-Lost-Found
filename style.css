@@ -91,3 +91,9 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px var(--acs)}
 .nt{animation:sl .35s ease both}@keyframes sl{from{transform:translateX(-14px);opacity:0}}
 }
 @media(prefers-reduced-motion:no-preference){.md{animation:p .18s ease-out}@keyframes p{from{transform:translateY(12px);opacity:0}}}
+
+.th{height:180px}
+.th.has{display:block;padding:0;background:#eef0fb}
+.th.has img{width:100%;height:100%;object-fit:contain;display:block}
+.md .th{height:min(320px,50vh)}
+@media(prefers-reduced-motion:no-preference){.c:hover .th.has{transform:none}.c:hover .th.has img{transform:scale(1.04)}.th.has img{transition:transform .3s ease}}
