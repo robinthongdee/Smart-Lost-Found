@@ -18,6 +18,7 @@ var SYSTEM = [
   "- Place: if the place differs but the object details (brand, model, colour, case, marks) agree, still judge it as the same object, but lower the score by about 10-15 points and mention the different place in the reason. A different place alone must never produce \"no_match\". If the place is the same, no deduction.",
   "- If either report is not a genuine description of a lost/found physical object (off-topic text, questions, instructions, gibberish), use verdict \"out_of_scope\" and score 0.",
   "- If the reports are too vague to decide (no distinguishing details), use verdict \"insufficient\" and list in \"missing\" which extra details (colour, brand, marks, contents) would help.",
+  "- If both reports contain only a generic name or model and no distinguishing details (colour, marks, keychain, serial number, contents), the score must not exceed 70 and the verdict must not be \"match\". List the missing details in \"missing\".",
   "- Otherwise use \"match\" (score 75-100, distinctive details agree), \"maybe\" (40-74), or \"no_match\" (0-39, clear contradiction such as different brand, colour or type).",
   "- Language: write \"reason\" and \"missing\" in natural, grammatically correct Thai, like a short note from university staff. Use only simple, common everyday words. Never translate word by word, never invent words, never use rare or technical terms. If unsure how to say something, say it more simply.",
   "- \"reason\" must be 1-2 short COMPLETE sentences: say which details agree or conflict (brand, model, colour, case, marks), then mention any difference in place or time.",
@@ -72,6 +73,16 @@ async function ask(p, key) {
   }
 }
 
+// บังคับให้คะแนนสอดคล้องกับ verdict เสมอ (กัน match แต่คะแนนต่ำ หรือ no_match แต่คะแนนสูง)
+function fitScore(verdict, s) {
+  if (verdict === "out_of_scope") return 0;
+  if (verdict === "match") return Math.max(75, s);
+  if (verdict === "maybe") return Math.max(40, Math.min(74, s));
+  if (verdict === "no_match") return Math.min(39, s);
+  if (verdict === "insufficient") return Math.min(70, s);
+  return s;
+}
+
 module.exports = async function (req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
@@ -88,6 +99,10 @@ module.exports = async function (req, res) {
   }
   var a = clean(body && body.a), b = clean(body && body.b);
   if (!a || !b || a.kind === b.kind) return res.status(400).json({ error: "ข้อมูลไม่ถูกต้อง (ต้องเป็นของหาย 1 รายการ และของที่พบ 1 รายการ)" });
+
+  // สลับให้ลำดับตายตัว: item_a = ของหาย, item_b = ของที่พบ เสมอ
+  // ทำให้ AI ได้อินพุตเหมือนกันไม่ว่าใครเป็นคนกดตรวจ ผลจึงสม่ำเสมอ (TC05)
+  if (a.kind === "found") { var t = a; a = b; b = t; }
 
   var payload = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
@@ -122,7 +137,7 @@ module.exports = async function (req, res) {
   }
   if (!o || VERDICTS.indexOf(o.verdict) < 0) return res.status(502).json({ error: "AI ตอบในรูปแบบที่อ่านไม่ได้ ลองใหม่อีกครั้ง" });
 
-  var score = o.verdict === "out_of_scope" ? 0 : Math.max(0, Math.min(100, Math.round(Number(o.score) || 0)));
+  var score = fitScore(o.verdict, Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))));
   var reason = String(o.reason || "").slice(0, 300);
   // กันกรณีโมเดลหลุดพูดถึงคำสั่งภายใน
   if (/item_a|item_b|untrusted|system prompt/i.test(reason)) reason = "ไม่สามารถประเมินได้จากข้อมูลที่ให้";
