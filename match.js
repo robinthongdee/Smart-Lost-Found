@@ -73,14 +73,18 @@ async function ask(p, key) {
   }
 }
 
-// บังคับให้คะแนนสอดคล้องกับ verdict เสมอ (กัน match แต่คะแนนต่ำ หรือ no_match แต่คะแนนสูง)
-function fitScore(verdict, s) {
-  if (verdict === "out_of_scope") return 0;
-  if (verdict === "match") return Math.max(75, s);
-  if (verdict === "maybe") return Math.max(40, Math.min(74, s));
-  if (verdict === "no_match") return Math.min(39, s);
-  if (verdict === "insufficient") return Math.min(70, s);
-  return s;
+// ให้คะแนนที่โมเดลให้เป็นตัวตัดสิน ไม่ดันคะแนนขึ้นให้พอดีช่อง verdict
+// ถ้าโมเดลตอบ match แต่คะแนนต่ำกว่า 75 จะลดระดับ verdict ลงตามคะแนนแทน
+function fit(verdict, s) {
+  if (verdict === "out_of_scope") return { verdict: verdict, score: 0 };
+  if (verdict === "insufficient") return { verdict: verdict, score: Math.min(70, s) };
+  if (verdict === "no_match") return { verdict: verdict, score: Math.min(39, s) };
+  if (verdict === "maybe") {
+    if (s >= 75) return { verdict: verdict, score: 74 };
+    return s >= 40 ? { verdict: verdict, score: s } : { verdict: "no_match", score: s };
+  }
+  if (s >= 75) return { verdict: "match", score: s };
+  return s >= 40 ? { verdict: "maybe", score: s } : { verdict: "no_match", score: s };
 }
 
 module.exports = async function (req, res) {
@@ -144,11 +148,13 @@ module.exports = async function (req, res) {
   }
   if (!o || VERDICTS.indexOf(o.verdict) < 0) return res.status(502).json({ error: "AI ตอบในรูปแบบที่อ่านไม่ได้ ลองใหม่อีกครั้ง" });
 
-  var score = fitScore(o.verdict, Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))));
+  var raw = Math.max(0, Math.min(100, Math.round(Number(o.score) || 0)));
+  var fx = fit(o.verdict, raw);
+  console.log("ai result", o.verdict, raw, "->", fx.verdict, fx.score); // ไว้ตรวจใน Vercel Logs (ไม่มีข้อมูลส่วนตัว)
   var reason = String(o.reason || "").slice(0, 300);
   // กันกรณีโมเดลหลุดพูดถึงคำสั่งภายใน
   if (/item_a|item_b|untrusted|system prompt/i.test(reason)) reason = "ไม่สามารถประเมินได้จากข้อมูลที่ให้";
   var missing = Array.isArray(o.missing) ? o.missing.slice(0, 3).map(function (s) { return String(s).slice(0, 80); }) : [];
 
-  return res.status(200).json({ score: score, verdict: o.verdict, reason: reason, missing: missing });
+  return res.status(200).json({ score: fx.score, verdict: fx.verdict, reason: reason, missing: missing });
 };
