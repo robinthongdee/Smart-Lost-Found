@@ -28,7 +28,7 @@ function bar(s){return '<div class="st" aria-label="สถานะ: '+ST[s]+'">
 function card(i){return '<button class="c '+i.kind+'" onclick="openD('+i.id+')">'+thumb(i)+'<div class="cb"><span class="tag '+i.kind+'">'+(i.kind==="lost"?"ของหาย":"พบของ")+'</span> <span class="m">'+ST[i.st]+'</span>'+mp(i)+(i.draft?' <span class="tag mt">ฉบับร่าง</span>':'')+'<h3>'+esc(i.name)+'</h3><div class="m">📍 '+esc(i.place)+" · "+rel(i.at)+"</div>"+bar(i.st)+"</div></button>"}
 function feed(){
 var n=function(k){return items.filter(function(i){return !i.draft&&(k==='r'?i.st===3:k==='l'?i.kind==='lost'&&i.st<3:i.kind==='found'&&i.st<3)}).length};
-var h='<div class="hero"><h1>ของหายในมหาวิทยาลัย ตามหาได้ที่เดียว</h1><p>ค้นหาของที่ทำหาย หรือดูว่ามีใครพบของที่ตรงกันหรือยัง</p><div class="stats"><span><b>'+n('l')+'</b> กำลังตามหา</span><span><b>'+n('f')+'</b> รอเจ้าของ</span><span><b>'+n('r')+'</b> คืนแล้ว</span></div><div class="cta"><button class="pri y" onclick="go(\'form\',\'lost\')">📢 แจ้งของหาย</button><button class="pri w" onclick="go(\'form\',\'found\')">🔍 แจ้งของที่พบ</button></div></div>';
+var h='<div class="hero"><h1>ของหายในมหาวิทยาลัย ตามหาได้ที่เดียว</h1><p>ค้นหาของที่ทำหาย หรือดูว่ามีใครพบของที่ตรงกันหรือยัง</p><div class="stats"><span><b>'+n('l')+'</b> กำลังตามหา</span><span><b>'+n('f')+'</b> รอเจ้าของ</span></div><div class="cta"><button class="pri y" onclick="go(\'form\',\'lost\')">📢 แจ้งของหาย</button><button class="pri w" onclick="go(\'form\',\'found\')">🔍 แจ้งของที่พบ</button></div></div>';
 h+='<div class="f"><input id="q" type="search" placeholder="ค้นหา เช่น โทรศัพท์ กุญแจ บัตรนักศึกษา" value="'+esc(f.q)+'" oninput="f.q=this.value;list()"><select onchange="f.place=this.value;list()"><option value="">ทุกสถานที่</option>'+PL.map(function(c){return "<option"+(f.place===c?" selected":"")+">"+c+"</option>"}).join("")+"</select></div>";
 h+='<div class="f" style="grid-template-columns:1fr 1fr"><select onchange="f.when=this.value;list()">'+[["","ทุกช่วงเวลา"],["1","วันนี้"],["7","7 วันล่าสุด"]].map(function(o){return '<option value="'+o[0]+'"'+(f.when===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select><select onchange="f.st=this.value;list()">'+[["","ทุกสถานะ"],["0","กำลังตามหา"],["1","พบแล้ว"],["2","ติดต่อแล้ว"]].map(function(o){return '<option value="'+o[0]+'"'+(f.st===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></div>';
 h+='<div class="seg">'+Object.keys(CAT).map(function(c){return '<button class="'+(f.cat===c?'on':'')+'" onclick="f.cat=f.cat===\''+c+'\'?\'\':\''+c+'\';render()">'+CAT[c]+' '+c+'</button>'}).join('')+'</div>';
@@ -43,9 +43,9 @@ $("app").innerHTML='<h1>'+(editId?"แก้ไขฉบับร่าง":L?"�
 '<label>ชื่อสิ่งของ<input id="n" maxlength="80" placeholder="เช่น iPhone เคสสีฟ้า"></label>'+
 '<div class="r2"><label>ประเภท<select id="c">'+Object.keys(CAT).map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label><label>สถานที่<select id="p">'+PL.map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label></div>'+
 '<label>วันที่และเวลา<input id="d" type="datetime-local" value="'+now+'"></label>'+
-'<label>รายละเอียด<textarea id="x" rows="3" maxlength="500" placeholder="ลักษณะเด่น สี รอยตำหนิ"></textarea></label>'+
+'<label>รายละเอียด <span class="m" style="font-weight:400">(ยิ่งละเอียด AI ยิ่งแม่น · ไม่ต้องใส่เบอร์โทรหรือ LINE ที่นี่ ให้ใส่ในช่องทางติดต่อ)</span><textarea id="x" rows="3" maxlength="500" placeholder="สี ยี่ห้อ รุ่น รอยตำหนิ พวงกุญแจ ของที่อยู่ข้างใน"></textarea></label>'+
 '<label>ช่องทางติดต่อ<input id="t" maxlength="60" placeholder="เบอร์โทร หรือ LINE ID"></label>'+
-'<label class="ck"><input type="checkbox" id="pd"><span>ข้าพเจ้ายินยอมให้เก็บและแสดงข้อมูลที่กรอก รวมถึงช่องทางติดต่อ เพื่อใช้ตามหาเจ้าของสิ่งของ และจะไม่ใส่เลขบัตรประชาชนหรือข้อมูลอ่อนไหวในรายละเอียด (<a href="#" onclick="privacy();return false">อ่านนโยบายความเป็นส่วนตัว</a>)</span></label>'+
+'<label class="ck"><input type="checkbox" id="pd"><span>ข้าพเจ้ายินยอมให้เก็บและแสดงข้อมูลที่กรอก รวมถึงช่องทางติดต่อ เพื่อใช้ตามหาเจ้าของสิ่งของ และจะไม่ใส่เลขบัตรประชาชน ข้อมูลอ่อนไหว หรือเบอร์โทร/LINE ในช่องรายละเอียด (<a href="#" onclick="privacy();return false">อ่านนโยบายความเป็นส่วนตัว</a>)</span></label>'+
 '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pri" onclick="submit()">ประกาศ'+(L?"ของหาย":"ของที่พบ")+'</button><button class="sec" onclick="submit(1)">บันทึกฉบับร่าง</button></div></div>';
 $("n").focus()}
 function pick(el){var fl=el.files[0];if(!fl)return;
@@ -95,7 +95,7 @@ $("mo").addEventListener("click",function(e){if(e.target===this)closeD()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeD()});
 async function adv(id){var i=get(id);if(i.st<3){if(i.st===2){var d=await sb.from("items").delete().eq("id",id).select();if(d.error||!d.data.length){toast("ลบไม่สำเร็จ: "+(d.error?d.error.message:"ไม่มีสิทธิ์ลบ (ตรวจสอบ policy ใน Supabase)"));return}items=items.filter(function(x){return x.id!==id});save();closeD();toast("คืนของเรียบร้อย รายการถูกลบออกจากระบบแล้ว");render();return}var r=await sb.from("items").update({st:i.st+1}).eq("id",id);if(r.error){toast("อัปเดตไม่สำเร็จ: "+r.error.message);return}i.st++;save();if(i.st===3){closeD();toast("คืนของเรียบร้อย รายการถูกนำออกจากหน้าค้นหาแล้ว")}else{toast("อัปเดตสถานะเป็น “"+ST[i.st]+"” แล้ว");openD(id)}render()}}
 function mineV(){var my=items.filter(function(i){return i.mine}).sort(function(a,b){return new Date(b.at)-new Date(a.at)}),dn=my.filter(function(i){return i.st===3&&!i.draft}).length,dr=my.filter(function(i){return i.draft}).length;
-$("app").innerHTML='<h1>ของฉัน</h1><p class="s">รายการที่คุณประกาศ ติดตามและอัปเดตสถานะได้ที่นี่ เมื่อคืนของเรียบร้อย รายการจะถูกลบออกจากระบบเพื่อปกป้องข้อมูลส่วนบุคคล</p><div class="stats kp"><span><b>'+my.length+'</b> ทั้งหมด</span><span><b>'+dn+'</b> คืนแล้ว</span><span><b>'+dr+'</b> ฉบับร่าง</span></div>'+(my.length?'<div class="g" style="margin-top:14px">'+my.map(card).join("")+'</div>':'<div class="em">ยังไม่มีรายการของคุณ กดแจ้งของหายหรือแจ้งของที่พบเพื่อเริ่มต้น</div>')}
+$("app").innerHTML='<h1>ของฉัน</h1><p class="s">รายการที่คุณประกาศ ติดตามและอัปเดตสถานะได้ที่นี่ เมื่อคืนของเรียบร้อย รายการจะถูกลบออกจากระบบเพื่อปกป้องข้อมูลส่วนบุคคล</p><div class="stats kp"><span><b>'+my.length+'</b> ทั้งหมด</span><span><b>'+dr+'</b> ฉบับร่าง</span></div>'+(my.length?'<div class="g" style="margin-top:14px">'+my.map(card).join("")+'</div>':'<div class="em">ยังไม่มีรายการของคุณ กดแจ้งของหายหรือแจ้งของที่พบเพื่อเริ่มต้น</div>')}
 function todos(){var o=[];items.forEach(function(i){if(!i.mine||i.st>2)return;
 if(i.draft){o.push({id:i.id,txt:'📝 ฉบับร่าง “<b>'+esc(i.name)+'</b>” ยังไม่ได้ประกาศ',btn:'เปิด'});return}
 var d=Math.floor((Date.now()-new Date(i.at))/864e5);
@@ -114,7 +114,7 @@ function privacy(){$("md").innerHTML='<div class="cb"><h2>นโยบายค�
 '<li><b>ข้อมูลที่เก็บ:</b> ชื่อสิ่งของ ประเภท สถานที่ เวลา รายละเอียด รูปภาพ (ถ้ามี) ช่องทางติดต่อ และรหัสผู้ใช้ (หรืออีเมลถ้าลงทะเบียน)</li>'+
 '<li><b>วัตถุประสงค์:</b> ใช้จับคู่และติดต่อคืนของเท่านั้น</li>'+
 '<li><b>ใครเห็นข้อมูล:</b> ช่องทางติดต่อที่กรอกจะแสดงให้ผู้ใช้ระบบเห็น จึงไม่ควรใส่เลขบัตรประชาชนหรือข้อมูลอ่อนไหว</li>'+
-'<li><b>การใช้ AI:</b> เมื่อกด “ให้ AI ตรวจ” ระบบส่งเฉพาะชื่อ ประเภท สถานที่ เวลา และรายละเอียดของสองรายการไปยังผู้ให้บริการ AI ไม่ส่งช่องทางติดต่อ รูปภาพ หรืออีเมล ผลของ AI อาจผิดพลาด ควรตรวจสอบกับอีกฝ่ายก่อนส่งมอบของ</li>'+
+'<li><b>การใช้ AI:</b> เมื่อกด “ให้ AI ตรวจ” ระบบส่งเฉพาะชื่อ ประเภท สถานที่ เวลา และรายละเอียดของสองรายการไปยังผู้ให้บริการ AI (Google Gemini) ไม่ส่งช่องทางติดต่อ รูปภาพ หรืออีเมล ผลของ AI อาจผิดพลาด ควรตรวจสอบกับอีกฝ่ายก่อนส่งมอบของ</li>'+
 '<li><b>การเก็บรักษา:</b> เมื่อเจ้าของกดอัปเดตเป็น “คืนแล้ว” รายการจะถูกลบออกจากระบบ</li>'+
 '<li><b>ขอลบหรือแก้ไขข้อมูล:</b> '+esc(CONTACT_EMAIL)+'</li></ul>'+
 '<div class="cta"><button class="sec" onclick="closeD()">ปิด</button></div></div>';$("mo").classList.add("on")}
@@ -135,7 +135,7 @@ setMe(r.data.user);await load();view="feed";toast("เข้าสู่ระ�
 async function logout(){await sb.auth.signOut();var a=await sb.auth.signInAnonymously();
 if(a.error){toast("เริ่มเซสชันใหม่ไม่สำเร็จ: "+a.error.message);return}
 setMe(a.data.user);await load();view="feed";toast("ออกจากระบบแล้ว");render()}
-function pk(i){return{kind:i.kind,name:i.name,cat:i.cat,place:i.place,at:i.at,desc:i.desc}}
+function pk(i){return{kind:i.kind,name:i.name,cat:i.cat,place:i.place,at:i.at,desc:i.desc==="ไม่มีรายละเอียดเพิ่มเติม"?"":i.desc}}
 function aiBox(k,h){var e=$("ai-"+k);if(e)e.innerHTML=h}
 function aiShow(k){var j=aiR[k],e=$("ai-"+k);if(!j||!e)return;var p=k.split("-"),
 V={match:["ตรงมาก","tag found"],maybe:["อาจตรง","tag mt"],no_match:["ไม่น่าตรง","tag lost"],insufficient:["ข้อมูลไม่พอ","tag mt"],out_of_scope:["วิเคราะห์ไม่ได้ (นอกขอบเขต)","tag lost"]}[j.verdict]||["ไม่ทราบ","tag mt"];
