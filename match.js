@@ -51,16 +51,23 @@ async function authed(req) {
   var m = (req.headers.authorization || "").match(/^Bearer (\S+)$/);
   if (!m) return false;
   try {
-    var r = await fetch(SB_URL + "/auth/v1/user", { headers: { apikey: SB_KEY, Authorization: "Bearer " + m[1] } });
-    return r.ok;
+    var ac = new AbortController();
+    var t = setTimeout(function () { ac.abort(); }, 3000);
+    try {
+      var r = await fetch(SB_URL + "/auth/v1/user", { signal: ac.signal, headers: { apikey: SB_KEY, Authorization: "Bearer " + m[1] } });
+      return r.ok;
+    } finally {
+      clearTimeout(t);
+    }
   } catch (e) {
     return false;
   }
 }
 
-async function ask(p, key) {
+// ms = เวลารอสูงสุดต่อครั้ง (เป้าหมายรวมไม่เกิน 10 วินาที: ครั้งแรก 5 วิ แล้วลองใหม่ได้อีก 1 ครั้ง)
+async function ask(p, key, ms) {
   var ac = new AbortController();
-  var t = setTimeout(function () { ac.abort(); }, 12000);
+  var t = setTimeout(function () { ac.abort(); }, ms);
   try {
     return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
       method: "POST",
@@ -113,7 +120,7 @@ module.exports = async function (req, res) {
     contents: [{ role: "user", parts: [{ text: box("item_a", a) + "\n" + box("item_b", b) }] }],
     generationConfig: {
       temperature: 0,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 400,
       responseMimeType: "application/json",
       thinkingConfig: { thinkingLevel: "low" }
     }
@@ -121,17 +128,26 @@ module.exports = async function (req, res) {
 
   var j;
   try {
-    var r = await ask(payload, key);
-    // Gemini ยุ่งชั่วคราว (429/500/503): รอสักครู่แล้วลองซ้ำ 1 ครั้ง
-    if (!r.ok && [429, 500, 503].indexOf(r.status) >= 0) {
-      console.error("Gemini busy, retrying", r.status);
-      await new Promise(function (ok) { setTimeout(ok, 1200); });
-      r = await ask(payload, key);
+    var r = null, slow = false;
+    try {
+      r = await ask(payload, key, 5000);
+    } catch (e) {
+      if (!e || e.name !== "AbortError") throw e;
+      slow = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
+    }
+    // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองซ้ำ 1 ครั้ง รวมแล้วไม่เกินประมาณ 12 วินาทีในกรณีแย่สุด
+    // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
+    if (slow || (!r.ok && [500, 503].indexOf(r.status) >= 0)) {
+      console.error("Gemini slow/busy, retrying", slow ? "timeout" : r.status);
+      if (!slow) await new Promise(function (ok) { setTimeout(ok, 800); });
+      r = await ask(payload, key, 6000);
     }
     if (!r.ok) {
       console.error("Gemini error", r.status, await r.text());
-      var busy = r.status === 429 || r.status === 503;
-      return res.status(502).json({ error: busy ? "AI กำลังมีผู้ใช้งานมาก ลองใหม่อีกครั้งในอีกสักครู่" : "AI ตอบกลับผิดพลาด (" + r.status + ")" });
+      var msg = r.status === 429 ? "ใช้งาน AI ถี่เกินไป รอประมาณ 1 นาทีแล้วกดใหม่"
+        : r.status === 503 ? "AI กำลังมีผู้ใช้งานมาก ลองใหม่อีกครั้งในอีกสักครู่"
+        : "AI ตอบกลับผิดพลาด (" + r.status + ")";
+      return res.status(r.status === 429 ? 429 : 502).json({ error: msg });
     }
     j = await r.json();
   } catch (e) {
