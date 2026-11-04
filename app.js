@@ -140,7 +140,11 @@ function aiBox(k,h){var e=$("ai-"+k);if(e)e.innerHTML=h}
 function aiShow(k){var j=aiR[k],e=$("ai-"+k);if(!j||!e)return;var p=k.split("-"),
 V={match:["ตรงมาก","tag found"],maybe:["อาจตรง","tag mt"],no_match:["ไม่น่าตรง","tag lost"],insufficient:["ข้อมูลไม่พอ","tag mt"],out_of_scope:["วิเคราะห์ไม่ได้ (นอกขอบเขต)","tag lost"]}[j.verdict]||["ไม่ทราบ","tag mt"];
 e.innerHTML='<div class="air"><span class="'+V[1]+'">🤖 '+V[0]+'</span> <span class="m">คะแนน '+j.score+'% · '+(j.ms/1000).toFixed(1)+' วิ</span><div class="pbar"><i style="width:'+j.score+'%"></i></div><p class="m" style="margin:6px 0 0">'+esc(j.reason)+'</p>'+(j.missing&&j.missing.length?'<p class="m" style="margin:4px 0 0">ควรเพิ่มรายละเอียด: '+j.missing.map(function(s){return esc(s)}).join(", ")+'</p>':'')+'<button class="sec sm" style="margin-top:8px" onclick="aiCheck('+p[0]+','+p[1]+',1)">ประเมินใหม่</button></div>'}
-async function aiCheck(ai,bi,force){var A=get(ai),B=get(bi),k=ai+"-"+bi;if(!A||!B)return;
+var aiQ=Promise.resolve(),aiBusy={};
+function aiCheck(ai,bi,force){var k=ai+"-"+bi;if(aiBusy[k])return;if(aiR[k]&&!force){aiShow(k);return}
+aiBusy[k]=1;aiBox(k,'<p class="m air" role="status">⏳ รอคิว…</p>');
+aiQ=aiQ.then(function(){return aiRun(ai,bi,force)}).catch(function(){}).then(function(){return new Promise(function(o){setTimeout(o,800)})}).then(function(){aiBusy[k]=0})}
+async function aiRun(ai,bi,force){var A=get(ai),B=get(bi),k=ai+"-"+bi;if(!A||!B)return;
 if(aiR[k]&&!force){aiShow(k);return}
 aiBox(k,'<p class="m air" role="status">⏳ กำลังประมวลผล…</p>');var t0=Date.now();
 try{var s=await sb.auth.getSession(),tk=s.data.session?s.data.session.access_token:"";
