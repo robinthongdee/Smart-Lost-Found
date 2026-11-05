@@ -143,7 +143,7 @@ e.innerHTML='<div class="air"><span class="'+V[1]+'">🤖 '+V[0]+'</span> <span 
 var aiQ=Promise.resolve(),aiBusy={};
 function aiCheck(ai,bi,force){var k=ai+"-"+bi;if(aiBusy[k])return;if(aiR[k]&&!force){aiShow(k);return}
 aiBusy[k]=1;aiBox(k,'<p class="m air" role="status">⏳ รอคิว…</p>');
-aiQ=aiQ.then(function(){return aiRun(ai,bi,force)}).catch(function(){}).then(function(){return new Promise(function(o){setTimeout(o,800)})}).then(function(){aiBusy[k]=0})}
+aiQ=aiQ.then(function(){return aiRun(ai,bi,force)}).catch(function(){}).then(function(){return new Promise(function(o){setTimeout(o,3500)})}).then(function(){aiBusy[k]=0})}
 async function aiRun(ai,bi,force){var A=get(ai),B=get(bi),k=ai+"-"+bi;if(!A||!B)return;
 if(aiR[k]&&!force){aiShow(k);return}
 aiBox(k,'<p class="m air" role="status">⏳ กำลังประมวลผล…</p>');var t0=Date.now();
