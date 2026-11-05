@@ -111,3 +111,14 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px var(--acs)}
 .th.has:before,.th.has:after{display:none!important}
 .th.has img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;object-position:center!important;display:block!important;transform:none}
 .md .th.has{height:min(340px,55vh)!important}
+
+/* admin dashboard */
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kc{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;display:grid;gap:2px}
+.kc b{font-size:1.7rem;line-height:1.2;color:var(--ac)}.kc span{color:var(--mut);font-size:.85rem}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.dg .imp{margin:0}
+.br{display:grid;grid-template-columns:110px 1fr 30px;gap:8px;align-items:center;font-size:.88rem;margin-top:6px}
+.br .pbar{margin:0}.br b{text-align:right}
+.tw{overflow-x:auto}.tb{width:100%;border-collapse:collapse;font-size:.9rem}
+.tb th,.tb td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--ln);white-space:nowrap}.tb th{color:var(--mut);font-weight:500}
+@media(max-width:640px){.dg{grid-template-columns:1fr}.br{grid-template-columns:90px 1fr 26px}}

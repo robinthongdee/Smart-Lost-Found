@@ -3,14 +3,15 @@ var CAT={"โทรศัพท์":"📱","กระเป๋า":"👜","ก�
 var PL=["ห้องเรียน","โรงอาหาร","ห้องสมุด","ลานจอดรถ","อาคารกิจกรรม","สนามกีฬา"];
 function ago(d,h){var t=new Date();t.setDate(t.getDate()-d);t.setHours(h,0,0,0);return t.toISOString()}
 var sb=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk");
-var items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,seen=[],editId=null;
+var isAdmin=false,items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,seen=[],editId=null;
 try{var sv=localStorage.getItem("slf4");if(sv)seen=JSON.parse(sv).seen||[]}catch(e){}
 function save(){try{localStorage.setItem("slf4",JSON.stringify({seen:seen}))}catch(e){}}
 function pairs(){var o=[];items.forEach(function(a){if(!a.mine||a.draft||a.st>2)return;items.forEach(function(b){if(b.id!==a.id&&b.st<3&&match(a,b))o.push({a:a.id,b:b.id,k:a.id+"-"+b.id})})});return o}
 function unreadN(){return pairs().filter(function(p){return seen.indexOf(p.k)<0}).length}
 function markSeen(){pairs().forEach(function(p){if(seen.indexOf(p.k)<0)seen.push(p.k)});save()}
 function fix(x){x.mine=x.owner===uid?1:0;return x}
-async function load(){var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data.map(fix)}
+async function chkAdmin(){isAdmin=false;if(me.anon)return;try{var r=await sb.rpc("is_admin");isAdmin=r.data===true}catch(e){}}
+async function load(){await chkAdmin();var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data.map(fix)}
 async function init(){try{var s=await sb.auth.getSession();if(!s.data.session){var a=await sb.auth.signInAnonymously();if(a.error)throw a.error;setMe(a.data.user)}else setMe(s.data.session.user);await load()}catch(e){toast("เชื่อมต่อ Supabase ไม่สำเร็จ: "+(e.message||e))}render()}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function fd(s){return new Date(s).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+" น."}
@@ -20,7 +21,7 @@ function mp(i){if(i.st>2||i.draft)return'';var n=items.filter(function(o){return
 function cp(id){var i=get(id),e=function(){toast("คัดลอกไม่สำเร็จ ลองเลือกข้อความด้วยตนเอง")};try{navigator.clipboard.writeText(i.contact).then(function(){toast("คัดลอกช่องทางติดต่อแล้ว")},e)}catch(x){e()}}
 function toast(m){var t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none"},2800)}
 function go(v,m){view=v;if(m)mode=m;img=null;editId=null;if(v==="notes")markSeen();render()}
-function nav(){acc();var n=[["feed","ค้นหา"],["lost","แจ้งของหาย"],["found","แจ้งของที่พบ"],["mine","ของฉัน"],["notes","แจ้งเตือน"]];
+function nav(){acc();var n=[["feed","ค้นหา"],["lost","แจ้งของหาย"],["found","แจ้งของที่พบ"],["mine","ของฉัน"],["notes","แจ้งเตือน"]];if(isAdmin)n.push(["dash","Dashboard"]);
 $("nav").innerHTML=n.map(function(x){var on=(view==="form"?mode:view)===x[0];
 return '<button class="'+(on?"on":"")+'" onclick="'+(x[0]==="lost"||x[0]==="found"?"go('form','"+x[0]+"')":"go('"+x[0]+"')")+'">'+x[1]+(x[0]==="notes"&&unreadN()?"<b>"+unreadN()+"</b>":"")+"</button>"}).join("")}
 function thumb(i){var em=CAT[i.cat]||"📦";if(!i.img)return '<div class="th">'+em+"</div>";var u=String(i.img).replace(/"/g,"%22").replace(/'/g,"%27").replace(/\)/g,"%29").replace(/\(/g,"%28");return '<div class="th has" style="--u:url(\''+u+'\')"><img src="'+u+'" alt="'+esc(i.name||"รูปสิ่งของ")+'" loading="lazy" onerror="this.parentNode.classList.remove(\'has\');this.parentNode.removeAttribute(\'style\');this.parentNode.textContent=\''+em+'\'"></div>'}
@@ -38,7 +39,7 @@ function list(){var q=f.q.trim().toLowerCase();
 var r=items.filter(function(i){return i.st<3&&!i.draft&&(!f.kind||i.kind===f.kind)&&(!f.cat||i.cat===f.cat)&&(!f.place||i.place===f.place)&&(!f.when||Date.now()-new Date(i.at)<=f.when*864e5)&&(!f.st||i.st===+f.st)&&(!q||(i.name+i.desc+i.cat+i.place+ST[i.st]).toLowerCase().indexOf(q)>-1)}).sort(function(a,b){return new Date(b.at)-new Date(a.at)});
 $("cnt").textContent="พบ "+r.length+" รายการ";$("lst").innerHTML=r.length?r.map(card).join(""):'<div class="em" style="grid-column:1/-1">ไม่พบรายการที่ตรงกัน ลองเปลี่ยนคำค้นหา หรือแจ้งของหายเพื่อให้คนอื่นช่วยตามหา<br><br><button class="pri" onclick="go(\'form\',\'lost\')">แจ้งของหาย</button></div>'}
 function form(){var L=mode==="lost",now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
-$("app").innerHTML='<h1>'+(editId?"แก้ไขฉบับร่าง":L?"แจ้งของหาย":"แจ้งของที่พบ")+'</h1><p class="s">'+(L?"กรอกรายละเอียดแล้วประกาศให้ทุกคนช่วยกันตามหา":"ลงข้อมูลของที่พบ เพื่อให้เจ้าของค้นเจอและติดต่อกลับได้")+'</p><div class="fm">'+
+$("app").innerHTML='<h1>'+(editId?"แก้ไขรายการ":L?"แจ้งของหาย":"แจ้งของที่พบ")+'</h1><p class="s">'+(L?"กรอกรายละเอียดแล้วประกาศให้ทุกคนช่วยกันตามหา":"ลงข้อมูลของที่พบ เพื่อให้เจ้าของค้นเจอและติดต่อกลับได้")+'</p><div class="fm">'+
 '<label>รูปภาพ<input type="file" accept="image/*" onchange="pick(this)"></label><div id="pv"></div>'+
 '<label>ชื่อสิ่งของ<input id="n" maxlength="80" placeholder="เช่น iPhone เคสสีฟ้า"></label>'+
 '<div class="r2"><label>ประเภท<select id="c">'+Object.keys(CAT).map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label><label>สถานที่<select id="p">'+PL.map(function(c){return "<option>"+c+"</option>"}).join("")+'</select></label></div>'+
@@ -87,7 +88,7 @@ $("md").innerHTML=thumb(i)+'<div class="cb"><span class="tag '+i.kind+'">'+(i.ki
 '<dl><dt>ประเภท</dt><dd>'+esc(i.cat)+'</dd><dt>สถานที่</dt><dd>'+esc(i.place)+'</dd><dt>วันที่และเวลา</dt><dd>'+fd(i.at)+'</dd><dt>รายละเอียด</dt><dd>'+esc(i.desc)+'</dd></dl>'+
 '<div class="ct"><div class="m">ติดต่อ'+(i.kind==="lost"?"เจ้าของ":"ผู้พบของ")+'</div><b>'+esc(i.contact)+'</b></div>'+
 (ms.length?'<p class="m">รายการที่อาจตรงกัน: '+ms.map(function(o){return '<a href="#" onclick="openD('+o.id+');return false">'+esc(o.name)+"</a>"}).join(", ")+"</p>":"")+
-'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(i.draft?'<button class="pri" onclick="pub('+i.id+')">ประกาศเลย</button><button class="sec" onclick="editD('+i.id+')">แก้ไข</button>':i.st<3?(i.mine?'<button class="pri" onclick="adv('+i.id+')">อัปเดตเป็น “'+ST[i.st+1]+'”</button>':'<span class="m">เฉพาะเจ้าของประกาศที่อัปเดตสถานะได้</span>'):'<span class="m">รายการนี้ปิดแล้ว คืนของเรียบร้อย</span>')+'<button class="sec" onclick="cp('+i.id+')">คัดลอกช่องทางติดต่อ</button><button class="sec" onclick="closeD()">ปิด</button></div></div>';
+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(i.draft?'<button class="pri" onclick="pub('+i.id+')">ประกาศเลย</button><button class="sec" onclick="editD('+i.id+')">แก้ไข</button>':i.st<3?((i.mine||isAdmin)?'<button class="pri" onclick="adv('+i.id+')">อัปเดตเป็น “'+ST[i.st+1]+'”</button>'+(isAdmin?'<button class="sec" onclick="editD('+i.id+')">แก้ไข</button>':''):'<span class="m">เฉพาะเจ้าของประกาศหรือแอดมินที่อัปเดตสถานะได้</span>'):'<span class="m">รายการนี้ปิดแล้ว คืนของเรียบร้อย</span>')+'<button class="sec" onclick="cp('+i.id+')">คัดลอกช่องทางติดต่อ</button>'+(isAdmin?'<button class="sec" style="color:#dc2626" onclick="delIt('+i.id+')">ลบ</button>':'')+'<button class="sec" onclick="closeD()">ปิด</button></div></div>';
 $("mo").classList.add("on")}
 function closeD(){$("mo").classList.remove("on")}
 async function pub(id){var i=get(id);var r=await sb.from("items").update({draft:false}).eq("id",id);if(r.error){toast("ประกาศไม่สำเร็จ: "+r.error.message);return}i.draft=false;var ms=items.filter(function(o){return o.st<3&&match(i,o)});save();closeD();toast(ms.length?"ประกาศแล้ว พบ "+ms.length+" รายการที่อาจตรงกัน":"ประกาศเรียบร้อยแล้ว");render()}
@@ -108,7 +109,7 @@ $("app").innerHTML=h;Object.keys(aiR).forEach(aiShow)}
 var CONTACT_EMAIL="robin.tho@spumail.net";
 var me={anon:true,email:""},aiR={};
 function setMe(u){uid=u.id;me={anon:!!u.is_anonymous,email:u.email||""}}
-function acc(){var b=$("acc");b.className="acc"+(view==="acct"?" on":"");b.textContent="👤 "+(me.anon?"บัญชี":me.email)}
+function acc(){var b=$("acc");b.className="acc"+(view==="acct"?" on":"");b.textContent="👤 "+(me.anon?"บัญชี":me.email)+(isAdmin?" · แอดมิน":"")}
 function ftr(){$("app").insertAdjacentHTML("beforeend",'<p class="ft">🔒 <a href="#" onclick="privacy();return false">นโยบายความเป็นส่วนตัว</a> · ผลจาก AI เป็นเพียงคำแนะนำ อาจผิดพลาดได้</p>')}
 function privacy(){$("md").innerHTML='<div class="cb"><h2>นโยบายความเป็นส่วนตัว (PDPA)</h2><ul class="m">'+
 '<li><b>ข้อมูลที่เก็บ:</b> ชื่อสิ่งของ ประเภท สถานที่ เวลา รายละเอียด รูปภาพ (ถ้ามี) ช่องทางติดต่อ และรหัสผู้ใช้ (หรืออีเมลถ้าลงทะเบียน)</li>'+
@@ -153,6 +154,23 @@ var j=await r.json().catch(function(){return{}});
 if(!r.ok)throw new Error(j.error||"HTTP "+r.status);
 j.ms=Date.now()-t0;aiR[k]=j;aiShow(k)}
 catch(e){aiBox(k,'<p class="m air">ใช้ AI ไม่ได้ชั่วคราว: '+esc(e.message||e)+' (ยังใช้ผลจับคู่ตามกฎด้านบนได้)</p>')}}
-function render(){nav();view==="feed"?feed():view==="form"?form():view==="mine"?mineV():view==="acct"?acctV():notesV();ftr()}
+function render(){if(view==="dash"&&!isAdmin)view="feed";nav();view==="feed"?feed():view==="form"?form():view==="mine"?mineV():view==="acct"?acctV():view==="dash"?dashV():notesV();ftr()}
+async function delIt(id){if(!isAdmin||!confirm("ลบรายการนี้ถาวร?"))return;var d=await sb.from("items").delete().eq("id",id).select();if(d.error||!d.data.length){toast("ลบไม่สำเร็จ: "+(d.error?d.error.message:"ไม่มีสิทธิ์ลบ (ตรวจ policy admin ใน Supabase)"));return}items=items.filter(function(x){return x.id!==id});closeD();toast("ลบรายการแล้ว");render()}
+function bars(o){var m=Math.max.apply(null,o.map(function(x){return x[1]}).concat([1]));return '<div class="bars">'+o.map(function(x){return '<div class="br"><span>'+esc(x[0])+'</span><div class="pbar"><i style="width:'+Math.round(x[1]/m*100)+'%"></i></div><b>'+x[1]+'</b></div>'}).join("")+'</div>'}
+function dashV(){var A=items.filter(function(i){return !i.draft}),op=A.filter(function(i){return i.st<3}),
+L=op.filter(function(i){return i.kind==="lost"}),F=op.filter(function(i){return i.kind==="found"}),
+dr=items.filter(function(i){return i.draft}).length,
+mt=L.filter(function(a){return F.some(function(b){return match(a,b)})}).length,
+old=op.filter(function(i){return Date.now()-new Date(i.at)>=7*864e5}).length,days=[];
+for(var d=6;d>=0;d--){var s=new Date();s.setHours(0,0,0,0);s.setDate(s.getDate()-d);var a0=s.getTime(),a1=a0+864e5;days.push([s.toLocaleDateString("th-TH",{day:"numeric",month:"short"}),A.filter(function(i){var t=new Date(i.at).getTime();return t>=a0&&t<a1}).length])}
+var k=function(n,t){return '<div class="kc"><b>'+n+'</b><span>'+t+'</span></div>'};
+var rows=items.slice().sort(function(a,b){return new Date(b.at)-new Date(a.at)}).slice(0,10).map(function(i){return '<tr><td>'+esc(i.name)+(i.draft?' <span class="tag mt">ร่าง</span>':'')+'</td><td><span class="tag '+i.kind+'">'+(i.kind==="lost"?"หาย":"พบ")+'</span></td><td>'+ST[i.st]+'</td><td>'+esc(i.place)+'</td><td><button class="sec sm" onclick="openD('+i.id+')">จัดการ</button></td></tr>'}).join("");
+$("app").innerHTML='<h1>Dashboard</h1><p class="s">ภาพรวมระบบสำหรับผู้ดูแล (รายการที่คืนแล้วถูกลบตามนโยบาย PDPA จึงไม่นับรวม)</p>'+
+'<div class="kpi">'+k(items.length,"รายการทั้งหมด")+k(L.length,"ของหายที่ยังตามหา")+k(F.length,"ของที่พบรอเจ้าของ")+k(mt,"ของหายที่มีคู่อาจตรง")+k(old,"ค้างเกิน 7 วัน")+k(dr,"ฉบับร่าง")+'</div>'+
+'<div class="dg"><div class="imp"><h2>สถานะ (ที่ยังเปิดอยู่)</h2>'+bars(ST.slice(0,3).map(function(s,i){return[s,op.filter(function(x){return x.st===i}).length]}))+'</div>'+
+'<div class="imp"><h2>รายการใหม่ 7 วันล่าสุด</h2>'+bars(days)+'</div>'+
+'<div class="imp"><h2>ตามประเภท</h2>'+bars(Object.keys(CAT).map(function(c){return[CAT[c]+" "+c,A.filter(function(x){return x.cat===c}).length]}))+'</div>'+
+'<div class="imp"><h2>ตามสถานที่</h2>'+bars(PL.map(function(p){return[p,A.filter(function(x){return x.place===p}).length]}))+'</div></div>'+
+'<div class="imp"><h2>รายการล่าสุด</h2><div class="tw"><table class="tb"><tr><th>ชื่อ</th><th>ชนิด</th><th>สถานะ</th><th>สถานที่</th><th></th></tr>'+rows+'</table></div></div>'}
 document.addEventListener("click",function(e){var b=e.target.closest("button");if(!b||matchMedia("(prefers-reduced-motion:reduce)").matches)return;var r=b.getBoundingClientRect(),s=document.createElement("span"),d=Math.max(r.width,r.height)*2;s.className="rp";s.style.cssText="width:"+d+"px;height:"+d+"px;left:"+(e.clientX-r.left-d/2)+"px;top:"+(e.clientY-r.top-d/2)+"px";b.appendChild(s);setTimeout(function(){s.remove()},600)});
 init();
