@@ -128,19 +128,26 @@ module.exports = async function (req, res) {
 
   var j;
   try {
-    var r = null, slow = false;
-    try {
-      r = await ask(payload, key, 5000);
-    } catch (e) {
-      if (!e || e.name !== "AbortError") throw e;
-      slow = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
-    }
-    // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองซ้ำ 1 ครั้ง รวมแล้วไม่เกินประมาณ 12 วินาทีในกรณีแย่สุด
+    // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองได้สูงสุด 3 ครั้ง ภายในงบเวลารวมประมาณ 11 วินาที
     // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
-    if (slow || (!r.ok && [500, 503].indexOf(r.status) >= 0)) {
-      console.error("Gemini slow/busy, retrying", slow ? "timeout" : r.status);
-      if (!slow) await new Promise(function (ok) { setTimeout(ok, 800); });
-      r = await ask(payload, key, 6000);
+    var r = null, t0 = Date.now(), BUDGET = 11000, lastAbort = false;
+    for (var n = 0; n < 3; n++) {
+      var left = BUDGET - (Date.now() - t0);
+      if (n > 0 && left < 2000) break;
+      lastAbort = false;
+      try {
+        r = await ask(payload, key, Math.min(5000, left));
+      } catch (e) {
+        if (!e || e.name !== "AbortError") throw e;
+        lastAbort = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
+        r = null;
+      }
+      if (r && (r.ok || [500, 503].indexOf(r.status) < 0)) break;
+      console.error("Gemini slow/busy, attempt", n + 1, r ? r.status : "timeout");
+      if (r) await new Promise(function (ok) { setTimeout(ok, 700 * (n + 1)); });
+    }
+    if (!r) {
+      return res.status(502).json({ error: lastAbort ? "AI ตอบช้าเกินไป ลองใหม่อีกครั้ง" : "เรียก AI ไม่สำเร็จ" });
     }
     if (!r.ok) {
       console.error("Gemini error", r.status, await r.text());
