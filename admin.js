@@ -21,7 +21,7 @@ if(r.data!==true){await sb.auth.signOut();loginV("บัญชีนี้ไม
 await load();render()}
 async function load(){var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data}
 function loginV(msg){$("nav").innerHTML="";
-$("app").innerHTML='<div style="max-width:380px;margin:40px auto"><h1>เข้าสู่ระบบผู้ดูแล</h1><p class="s">สำหรับผู้ดูแลระบบเท่านั้น</p>'+(msg?'<p class="m" style="color:#dc2626">'+esc(msg)+'</p>':'')+
+$("app").innerHTML='<div style="max-width:380px;margin:40px auto"><h1>เข้าสู่ระบบผู้ดูแล</h1><p class="s">สำหรับผู้ดูแลระบบเท่านั้น · <a href="index.html" style="color:var(--ac)">← กลับหน้าผู้ใช้</a></p>'+(msg?'<p class="m" style="color:#dc2626">'+esc(msg)+'</p>':'')+
 '<div class="fm"><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน<input id="ap" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')login()"></label><button class="pri" onclick="login()">เข้าสู่ระบบ</button></div></div>'}
 async function login(){var e=$("ae").value.trim(),p=$("ap").value;if(!e||!p){toast("กรุณากรอกอีเมลและรหัสผ่าน");return}
 var r=await sb.auth.signInWithPassword({email:e,password:p});if(r.error){toast("เข้าสู่ระบบไม่สำเร็จ: "+r.error.message);return}

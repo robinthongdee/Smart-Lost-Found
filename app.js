@@ -118,7 +118,17 @@ function privacy(){$("md").innerHTML='<div class="cb"><h2>นโยบายค�
 '<li><b>การเก็บรักษา:</b> เมื่อเจ้าของกดอัปเดตเป็น “คืนแล้ว” รายการจะถูกลบออกจากระบบ</li>'+
 '<li><b>ขอลบหรือแก้ไขข้อมูล:</b> '+esc(CONTACT_EMAIL)+'</li></ul>'+
 '<div class="cta"><button class="sec" onclick="closeD()">ปิด</button></div></div>';$("mo").classList.add("on")}
-function acctV(){var h='<h1>บัญชีผู้ใช้</h1>';
+var role="user",sbA=null;
+function setRole(r){role=r;acctV()}
+function roleCards(){return '<div class="roles">'+[["user","👤","ผู้ใช้ทั่วไป","แจ้งของหาย แจ้งของที่พบ และติดตามสถานะรายการของตัวเอง"],["admin","🛡️","ผู้ดูแลระบบ","Dashboard ภาพรวม และแก้ไข/ลบได้ทุกรายการ"]].map(function(r){return '<button class="rl'+(role===r[0]?" on":"")+'" onclick="setRole(\''+r[0]+'\')"><span>'+r[1]+'</span><b>'+r[2]+'</b><small>'+r[3]+'</small></button>'}).join("")+'</div>'}
+async function adminLogin(){var c=cred();if(!c)return;
+if(!sbA)sbA=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk",{auth:{storageKey:"slf-admin-auth"}});
+var r=await sbA.auth.signInWithPassword(c);if(r.error){toast("เข้าสู่ระบบไม่สำเร็จ: "+r.error.message);return}
+var ad=await sbA.rpc("is_admin");if(ad.data!==true){await sbA.auth.signOut();toast("บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ");return}
+location.href="admin.html"}
+function acctV(){if(role==="admin"){$("app").innerHTML='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards()+'<div class="fm"><h2>เข้าสู่ระบบเป็น <span class="tag mt">🛡️ ผู้ดูแลระบบ</span></h2><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน<input id="ap" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')adminLogin()"></label><button class="pri" onclick="adminLogin()">เข้าสู่ระบบผู้ดูแล</button><p class="m" style="margin:0">เฉพาะอีเมลที่ได้รับสิทธิ์แอดมินเท่านั้น ผู้ใช้ทั่วไปเข้าไม่ได้</p></div>';return}
+return acctU()}
+function acctU(){var h='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards();
 if(me.anon)h+='<p class="s">ตอนนี้คุณใช้งานแบบไม่ระบุตัวตน ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง จะเข้าถึงรายการของคุณไม่ได้ ลงทะเบียนเพื่อเก็บรายการไว้กับอีเมล</p><div class="fm"><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)<input id="ap" type="password" autocomplete="current-password"></label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pri" onclick="reg()">ลงทะเบียน (เก็บรายการปัจจุบันไว้)</button><button class="sec" onclick="login()">เข้าสู่ระบบ</button></div><p class="m" style="margin:0">เข้าสู่ระบบจะเปลี่ยนไปใช้บัญชีที่เคยลงทะเบียนไว้ รายการที่ประกาศแบบไม่ระบุตัวตนบนเครื่องนี้จะไม่แสดงในบัญชีนั้น</p></div>';
 else h+='<p class="s">เข้าสู่ระบบแล้ว รายการของคุณผูกกับอีเมลนี้</p><div class="fm"><div class="ct"><div class="m">อีเมล</div><b>'+esc(me.email)+'</b></div><div><button class="sec" onclick="logout()">ออกจากระบบ</button></div></div>';
 $("app").innerHTML=h}
