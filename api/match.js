@@ -51,16 +51,23 @@ async function authed(req) {
   var m = (req.headers.authorization || "").match(/^Bearer (\S+)$/);
   if (!m) return false;
   try {
-    var r = await fetch(SB_URL + "/auth/v1/user", { headers: { apikey: SB_KEY, Authorization: "Bearer " + m[1] } });
-    return r.ok;
+    var ac = new AbortController();
+    var t = setTimeout(function () { ac.abort(); }, 3000);
+    try {
+      var r = await fetch(SB_URL + "/auth/v1/user", { signal: ac.signal, headers: { apikey: SB_KEY, Authorization: "Bearer " + m[1] } });
+      return r.ok;
+    } finally {
+      clearTimeout(t);
+    }
   } catch (e) {
     return false;
   }
 }
 
-async function ask(p, key) {
+// ms = เวลารอสูงสุดต่อครั้ง (เป้าหมายรวมไม่เกิน 10 วินาที: ครั้งแรก 5 วิ แล้วลองใหม่ได้อีก 1 ครั้ง)
+async function ask(p, key, ms) {
   var ac = new AbortController();
-  var t = setTimeout(function () { ac.abort(); }, 25000);
+  var t = setTimeout(function () { ac.abort(); }, ms);
   try {
     return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
       method: "POST",
@@ -73,14 +80,18 @@ async function ask(p, key) {
   }
 }
 
-// บังคับให้คะแนนสอดคล้องกับ verdict เสมอ (กัน match แต่คะแนนต่ำ หรือ no_match แต่คะแนนสูง)
-function fitScore(verdict, s) {
-  if (verdict === "out_of_scope") return 0;
-  if (verdict === "match") return Math.max(75, s);
-  if (verdict === "maybe") return Math.max(40, Math.min(74, s));
-  if (verdict === "no_match") return Math.min(39, s);
-  if (verdict === "insufficient") return Math.min(70, s);
-  return s;
+// ให้คะแนนที่โมเดลให้เป็นตัวตัดสิน ไม่ดันคะแนนขึ้นให้พอดีช่อง verdict
+// ถ้าโมเดลตอบ match แต่คะแนนต่ำกว่า 75 จะลดระดับ verdict ลงตามคะแนนแทน
+function fit(verdict, s) {
+  if (verdict === "out_of_scope") return { verdict: verdict, score: 0 };
+  if (verdict === "insufficient") return { verdict: verdict, score: Math.min(70, s) };
+  if (verdict === "no_match") return { verdict: verdict, score: Math.min(39, s) };
+  if (verdict === "maybe") {
+    if (s >= 75) return { verdict: verdict, score: 74 };
+    return s >= 40 ? { verdict: verdict, score: s } : { verdict: "no_match", score: s };
+  }
+  if (s >= 75) return { verdict: "match", score: s };
+  return s >= 40 ? { verdict: "maybe", score: s } : { verdict: "no_match", score: s };
 }
 
 module.exports = async function (req, res) {
@@ -109,7 +120,7 @@ module.exports = async function (req, res) {
     contents: [{ role: "user", parts: [{ text: box("item_a", a) + "\n" + box("item_b", b) }] }],
     generationConfig: {
       temperature: 0,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 400,
       responseMimeType: "application/json",
       thinkingConfig: { thinkingLevel: "low" }
     }
@@ -117,10 +128,33 @@ module.exports = async function (req, res) {
 
   var j;
   try {
-    var r = await ask(payload, key);
+    // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองได้สูงสุด 3 ครั้ง ภายในงบเวลารวมประมาณ 11 วินาที
+    // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
+    var r = null, t0 = Date.now(), BUDGET = 11000, lastAbort = false;
+    for (var n = 0; n < 3; n++) {
+      var left = BUDGET - (Date.now() - t0);
+      if (n > 0 && left < 2000) break;
+      lastAbort = false;
+      try {
+        r = await ask(payload, key, Math.min(5000, left));
+      } catch (e) {
+        if (!e || e.name !== "AbortError") throw e;
+        lastAbort = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
+        r = null;
+      }
+      if (r && (r.ok || [500, 503].indexOf(r.status) < 0)) break;
+      console.error("Gemini slow/busy, attempt", n + 1, r ? r.status : "timeout");
+      if (r) await new Promise(function (ok) { setTimeout(ok, 700 * (n + 1)); });
+    }
+    if (!r) {
+      return res.status(502).json({ error: lastAbort ? "AI ตอบช้าเกินไป ลองใหม่อีกครั้ง" : "เรียก AI ไม่สำเร็จ" });
+    }
     if (!r.ok) {
       console.error("Gemini error", r.status, await r.text());
-      return res.status(502).json({ error: "AI ตอบกลับผิดพลาด (" + r.status + ")" });
+      var msg = r.status === 429 ? "ใช้งาน AI ถี่เกินไป รอประมาณ 1 นาทีแล้วกดใหม่"
+        : r.status === 503 ? "AI กำลังมีผู้ใช้งานมาก ลองใหม่อีกครั้งในอีกสักครู่"
+        : "AI ตอบกลับผิดพลาด (" + r.status + ")";
+      return res.status(r.status === 429 ? 429 : 502).json({ error: msg });
     }
     j = await r.json();
   } catch (e) {
@@ -137,11 +171,13 @@ module.exports = async function (req, res) {
   }
   if (!o || VERDICTS.indexOf(o.verdict) < 0) return res.status(502).json({ error: "AI ตอบในรูปแบบที่อ่านไม่ได้ ลองใหม่อีกครั้ง" });
 
-  var score = fitScore(o.verdict, Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))));
+  var raw = Math.max(0, Math.min(100, Math.round(Number(o.score) || 0)));
+  var fx = fit(o.verdict, raw);
+  console.log("ai result", o.verdict, raw, "->", fx.verdict, fx.score); // ไว้ตรวจใน Vercel Logs (ไม่มีข้อมูลส่วนตัว)
   var reason = String(o.reason || "").slice(0, 300);
   // กันกรณีโมเดลหลุดพูดถึงคำสั่งภายใน
   if (/item_a|item_b|untrusted|system prompt/i.test(reason)) reason = "ไม่สามารถประเมินได้จากข้อมูลที่ให้";
   var missing = Array.isArray(o.missing) ? o.missing.slice(0, 3).map(function (s) { return String(s).slice(0, 80); }) : [];
 
-  return res.status(200).json({ score: score, verdict: o.verdict, reason: reason, missing: missing });
+  return res.status(200).json({ score: fx.score, verdict: fx.verdict, reason: reason, missing: missing });
 };
