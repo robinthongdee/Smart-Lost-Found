@@ -130,13 +130,13 @@ module.exports = async function (req, res) {
   try {
     // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองได้สูงสุด 3 ครั้ง ภายในงบเวลารวมประมาณ 11 วินาที
     // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
-    var r = null, t0 = Date.now(), BUDGET = 11000, lastAbort = false;
+    var r = null, t0 = Date.now(), BUDGET = 14000, lastAbort = false;
     for (var n = 0; n < 3; n++) {
       var left = BUDGET - (Date.now() - t0);
       if (n > 0 && left < 2000) break;
       lastAbort = false;
       try {
-        r = await ask(payload, key, Math.min(5000, left));
+        r = await ask(payload, key, Math.min(n === 0 ? 8000 : 5000, left)); // ครั้งแรกรอได้ 8 วิ (ช่วง Gemini ช้า ผลมักมาที่ 6-9 วิ)
       } catch (e) {
         if (!e || e.name !== "AbortError") throw e;
         lastAbort = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
