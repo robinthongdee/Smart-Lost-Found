@@ -3,6 +3,7 @@ var CAT={"โทรศัพท์":"📱","กระเป๋า":"👜","ก�
 var PL=["ห้องเรียน","โรงอาหาร","ห้องสมุด","ลานจอดรถ","อาคารกิจกรรม","สนามกีฬา"];
 function ago(d,h){var t=new Date();t.setDate(t.getDate()-d);t.setHours(h,0,0,0);return t.toISOString()}
 var sb=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk");
+var sbA=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk",{auth:{storageKey:"slf-admin-auth"}}),adm="";
 var items=[],uid=null,notes=[],view="feed",f={q:"",cat:"",place:"",kind:""},mode="lost",img=null,seen=[],editId=null;
 try{var sv=localStorage.getItem("slf4");if(sv)seen=JSON.parse(sv).seen||[]}catch(e){}
 function save(){try{localStorage.setItem("slf4",JSON.stringify({seen:seen}))}catch(e){}}
@@ -12,6 +13,7 @@ function markSeen(){pairs().forEach(function(p){if(seen.indexOf(p.k)<0)seen.push
 function fix(x){x.mine=x.owner===uid?1:0;return x}
 async function load(){var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data.map(fix)}
 async function init(){try{var s=await sb.auth.getSession();if(!s.data.session){var a=await sb.auth.signInAnonymously();if(a.error)throw a.error;setMe(a.data.user)}else setMe(s.data.session.user);await load()}catch(e){toast("เชื่อมต่อ Supabase ไม่สำเร็จ: "+(e.message||e))}
+try{var as=await sbA.auth.getSession();if(as.data.session&&as.data.session.user.email){var ar=await sbA.rpc("is_admin");if(ar.data===true)adm=as.data.session.user.email}}catch(e){}
 if(/^#admin/.test(location.hash)){role="admin";view="acct";if(location.hash==="#admin-denied")setTimeout(function(){toast("บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ")},300)}
 render()}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -110,7 +112,8 @@ $("app").innerHTML=h;Object.keys(aiR).forEach(aiShow)}
 var CONTACT_EMAIL="robin.tho@spumail.net";
 var me={anon:true,email:""},aiR={};
 function setMe(u){uid=u.id;me={anon:!!u.is_anonymous,email:u.email||""}}
-function acc(){var b=$("acc");b.className="acc"+(view==="acct"?" on":"");b.textContent="👤 "+(me.anon?"บัญชี":me.email)}
+function acc(){var b=$("acc");b.className="acc"+(view==="acct"?" on":"");b.textContent=adm?"🛡️ "+adm+" · แอดมิน":"👤 "+(me.anon?"บัญชี":me.email);$("lo").hidden=!(adm||!me.anon);$("th").textContent=themeLabel()}
+async function doLogout(){if(adm){await sbA.auth.signOut();adm="";toast("ออกจากระบบผู้ดูแลแล้ว");view="feed";render();return}await logout()}
 function ftr(){$("app").insertAdjacentHTML("beforeend",'<p class="ft">🔒 <a href="#" onclick="privacy();return false">นโยบายความเป็นส่วนตัว</a> · ผลจาก AI เป็นเพียงคำแนะนำ อาจผิดพลาดได้</p>')}
 function privacy(){$("md").innerHTML='<div class="cb"><h2>นโยบายความเป็นส่วนตัว (PDPA)</h2><ul class="m">'+
 '<li><b>ข้อมูลที่เก็บ:</b> ชื่อสิ่งของ ประเภท สถานที่ เวลา รายละเอียด รูปภาพ (ถ้ามี) ช่องทางติดต่อ และรหัสผู้ใช้ (หรืออีเมลถ้าลงทะเบียน)</li>'+
@@ -120,15 +123,19 @@ function privacy(){$("md").innerHTML='<div class="cb"><h2>นโยบายค�
 '<li><b>การเก็บรักษา:</b> เมื่อเจ้าของกดอัปเดตเป็น “คืนแล้ว” รายการจะถูกลบออกจากระบบ</li>'+
 '<li><b>ขอลบหรือแก้ไขข้อมูล:</b> '+esc(CONTACT_EMAIL)+'</li></ul>'+
 '<div class="cta"><button class="sec" onclick="closeD()">ปิด</button></div></div>';$("mo").classList.add("on")}
-var role="user",sbA=null;
+var role="user";
 function setRole(r){role=r;acctV()}
 function roleCards(){return '<div class="roles">'+[["user","👤","ผู้ใช้ทั่วไป","แจ้งของหาย แจ้งของที่พบ และติดตามสถานะรายการของตัวเอง"],["admin","🛡️","ผู้ดูแลระบบ","Dashboard ภาพรวม และแก้ไข/ลบได้ทุกรายการ"]].map(function(r){return '<button class="rl'+(role===r[0]?" on":"")+'" onclick="setRole(\''+r[0]+'\')"><span>'+r[1]+'</span><b>'+r[2]+'</b><small>'+r[3]+'</small></button>'}).join("")+'</div>'}
-async function adminLogin(){var c=cred();if(!c)return;
-if(!sbA)sbA=supabase.createClient("https://htxdnqhzyaxuvomziqzr.supabase.co","sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk",{auth:{storageKey:"slf-admin-auth"}});
+async function adminLogin(){if(!me.anon){toast("ออกจากระบบผู้ใช้ก่อน จึงจะสลับเป็นผู้ดูแลได้");return}var c=cred();if(!c)return;
 var r=await sbA.auth.signInWithPassword(c);if(r.error){toast("เข้าสู่ระบบไม่สำเร็จ: "+r.error.message);return}
 var ad=await sbA.rpc("is_admin");if(ad.data!==true){await sbA.auth.signOut();toast("บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ");return}
 location.href="admin.html"}
-function acctV(){if(role==="admin"){$("app").innerHTML='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards()+'<div class="fm"><h2>เข้าสู่ระบบเป็น <span class="tag mt">🛡️ ผู้ดูแลระบบ</span></h2><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน<input id="ap" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')adminLogin()"></label><button class="pri" onclick="adminLogin()">เข้าสู่ระบบผู้ดูแล</button><p class="m" style="margin:0">เฉพาะอีเมลที่ได้รับสิทธิ์แอดมินเท่านั้น ผู้ใช้ทั่วไปเข้าไม่ได้</p></div>';return}
+function blk(msg,btn){return '<div class="fm"><div class="nt0">'+msg+'</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+btn+'</div></div>'}
+function acctV(){var hd='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards();
+if(role==="admin"&&adm){$("app").innerHTML=hd+blk('เข้าสู่ระบบเป็นผู้ดูแลแล้ว: <b>'+esc(adm)+'</b>','<button class="pri" onclick="location.href=\'admin.html\'">ไปหน้า Dashboard</button><button class="sec" onclick="doLogout()">ออกจากระบบ</button>');return}
+if(role==="admin"&&!me.anon){$("app").innerHTML=hd+blk('คุณเข้าสู่ระบบเป็นผู้ใช้ <b>'+esc(me.email)+'</b> อยู่ ต้องออกจากระบบก่อน จึงจะสลับเป็นผู้ดูแลได้','<button class="pri" onclick="doLogout()">ออกจากระบบ</button>');return}
+if(role==="user"&&adm){$("app").innerHTML=hd+blk('คุณเข้าสู่ระบบเป็นผู้ดูแล <b>'+esc(adm)+'</b> อยู่ ต้องออกจากระบบก่อน จึงจะสลับเป็นบัญชีผู้ใช้ได้','<button class="pri" onclick="doLogout()">ออกจากระบบ</button><button class="sec" onclick="location.href=\'admin.html\'">ไปหน้า Dashboard</button>');return}
+if(role==="admin"){$("app").innerHTML='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards()+'<div class="fm"><h2>เข้าสู่ระบบเป็น <span class="tag mt">🛡️ ผู้ดูแลระบบ</span></h2><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน<input id="ap" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')adminLogin()"></label><button class="pri" onclick="adminLogin()">เข้าสู่ระบบผู้ดูแล</button><p class="m" style="margin:0">เฉพาะอีเมลที่ได้รับสิทธิ์แอดมินเท่านั้น ผู้ใช้ทั่วไปเข้าไม่ได้</p></div>';return}
 return acctU()}
 function acctU(){var h='<h1>เข้าสู่ระบบ</h1><p class="s">เลือกบทบาทก่อน ระบบจะพาไปยังหน้าของบทบาทนั้น</p>'+roleCards();
 if(me.anon)h+='<p class="s">ตอนนี้คุณใช้งานแบบไม่ระบุตัวตน ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง จะเข้าถึงรายการของคุณไม่ได้ ลงทะเบียนเพื่อเก็บรายการไว้กับอีเมล</p><div class="fm"><label>อีเมล<input id="ae" type="email" autocomplete="email"></label><label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)<input id="ap" type="password" autocomplete="current-password"></label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pri" onclick="reg()">ลงทะเบียน (เก็บรายการปัจจุบันไว้)</button><button class="sec" onclick="login()">เข้าสู่ระบบ</button></div><p class="m" style="margin:0">เข้าสู่ระบบจะเปลี่ยนไปใช้บัญชีที่เคยลงทะเบียนไว้ รายการที่ประกาศแบบไม่ระบุตัวตนบนเครื่องนี้จะไม่แสดงในบัญชีนั้น</p></div>';

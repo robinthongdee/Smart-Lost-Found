@@ -129,3 +129,15 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px var(--acs)}
 .rl span{font-size:1.4rem}.rl small{color:var(--mut);font-size:.82rem;line-height:1.4}
 .rl.on{border-color:var(--ac);background:var(--acs)}
 @media(max-width:560px){.roles{grid-template-columns:1fr}}
+
+/* header: บัญชี / ออกจากระบบ / ธีม */
+[hidden]{display:none!important}
+.hr{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hb2{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:500}
+.hb2:hover{background:rgba(255,255,255,.24)}
+.nt0{background:var(--bg);border-radius:10px;padding:12px 14px;margin:0 0 12px}
+/* ธีมมืด */
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1226;--sf:#171b38;--ink:#e9ebfb;--mut:#a0a7cf;--ln:#2a3059;--ac:#8b85ff;--acs:#262a5c;--lost:#fb923c;--losts:#3a2316;--found:#2dd4bf;--founds:#10332f;--ok:#4ade80}
+:root[data-theme="dark"] .nt.tdo{background:#3a2e10}
+:root[data-theme="dark"] .th.has{background:#222747!important}
+:root[data-theme="dark"] .rl.on{background:var(--acs)}

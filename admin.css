@@ -1,5 +1,5 @@
 :root{color-scheme:light;--bg:#f4f5fb;--sf:#fff;--sf2:#f8f9fe;--ink:#151a3c;--mut:#667094;--ln:#e6e9f5;--ac:#4f46e5;--acs:#ecebff;--lost:#f97316;--losts:#fff0e6;--found:#0d9488;--founds:#dcf6f1;--warn:#d97706;--warns:#fff6e0;--bad:#dc2626;--bads:#fee8e8;--blue:#2563eb;--blues:#e4edff;--sh:0 1px 2px rgba(21,26,60,.04),0 8px 24px rgba(21,26,60,.06)}
-@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0d1022;--sf:#161a33;--sf2:#1b2040;--ink:#eceefb;--mut:#98a0c9;--ln:#272d52;--ac:#8b85ff;--acs:#262a5c;--losts:#3a2316;--founds:#10332f;--warns:#3a2e10;--bads:#3d1a1d;--blues:#1a2a52;--sh:0 8px 24px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0d1022;--sf:#161a33;--sf2:#1b2040;--ink:#eceefb;--mut:#98a0c9;--ln:#272d52;--ac:#8b85ff;--acs:#262a5c;--losts:#3a2316;--founds:#10332f;--warns:#3a2e10;--bads:#3d1a1d;--blues:#1a2a52;--sh:0 8px 24px rgba(0,0,0,.35)}
 *{box-sizing:border-box}html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.55 "Noto Sans Thai",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
@@ -33,8 +33,7 @@ svg{flex:none}
 /* buttons */
 .btn{display:inline-flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--ln);border-radius:11px;padding:8px 14px;font-weight:500;transition:transform .12s,box-shadow .15s,background .15s}
 .btn:hover{box-shadow:var(--sh);transform:translateY(-1px)}
-.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}.dark .btn.pri{color:#0d1022}
-@media(prefers-color-scheme:dark){.btn.pri{color:#0d1022}}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}[data-theme="dark"] .btn.pri{color:#0d1022}
 .btn.bad{color:var(--bad)}.btn.bad:hover{background:var(--bads)}
 .btn.sm{padding:5px 10px;font-size:.84rem;border-radius:9px}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
@@ -141,3 +140,6 @@ dl{display:grid;grid-template-columns:100px 1fr;gap:8px 12px;margin:0}dt{color:v
 .main{padding-bottom:100px}.g.c3,.g.c11{grid-template-columns:1fr}
 .m-card{grid-template-columns:1fr}.m-card .mid{grid-auto-flow:column;justify-content:start}
 }
+
+.ip{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ip img{max-width:150px;max-height:110px;border-radius:12px;border:1px solid var(--ln)}
+.fm input[type=file]{padding:6px}

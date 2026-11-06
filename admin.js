@@ -7,7 +7,7 @@ const CAT={"โทรศัพท์":"📱","กระเป๋า":"👜","ก
 const PL=["ห้องเรียน","โรงอาหาร","ห้องสมุด","ลานจอดรถ","อาคารกิจกรรม","สนามกีฬา"];
 const DAY=864e5,PER=10,LOGIN="index.html#admin";
 const C={lost:"#f97316",found:"#0d9488",ac:"#4f46e5",blue:"#2563eb",warn:"#d97706"};
-let items=[],me="",tab="over",openId=null,editing=false,upd=null;
+let items=[],me="",tab="over",openId=null,editing=false,upd=null,editImg;
 const F={q:"",kind:"",st:"",place:"",cat:"",sort:"at",dir:-1,page:1},sel=new Set();
 
 const $=id=>document.getElementById(id);
@@ -70,7 +70,7 @@ const TABS=[["over","ภาพรวม","grid"],["items","รายการท
 const TTL={over:["ภาพรวมระบบ","สรุปสถานการณ์ของหายและของที่พบในมหาวิทยาลัย"],items:["รายการทั้งหมด","ค้นหา กรอง แก้ไข เลื่อนสถานะ และลบได้ทุกรายการ"],match:["รายการที่อาจตรงกัน","คู่ของหาย–ของที่พบที่ระบบกฎคัดมาให้ตรวจ"]};
 function shell(){$("root").innerHTML=`<div class="shell"><aside class="side"><div class="brand"><i>⚙</i><div>Smart Lost &amp; Found<small>ผู้ดูแลระบบ</small></div></div>
 <nav id="nav"></nav><div class="who"><span>เข้าสู่ระบบเป็น</span><b>${esc(me)}</b><button onclick="logout()">${ic("out",16)} ออกจากระบบ</button><a href="index.html">← หน้าผู้ใช้</a></div></aside>
-<div class="main"><div class="top"><div><h1 id="ttl"></h1><p id="tsub"></p></div><div class="acts"><span class="upd" id="upd"></span><button class="btn" id="rf" onclick="refresh()">${ic("refresh",16)} รีเฟรช</button></div></div><section id="view"></section></div></div>`}
+<div class="main"><div class="top"><div><h1 id="ttl"></h1><p id="tsub"></p></div><div class="acts"><span class="upd" id="upd"></span><button class="btn" data-themebtn onclick="toggleTheme()">${themeLabel()}</button><button class="btn" id="rf" onclick="refresh()">${ic("refresh",16)} รีเฟรช</button></div></div><section id="view"></section></div></div>`}
 function nav(){const stale=open_().filter(i=>age(i)>=7).length,mt=pairs().length,bd={items:stale,match:mt};
 $("nav").innerHTML=TABS.map(t=>`<button class="${tab===t[0]?"on":""}" onclick="setTab('${t[0]}')">${ic(t[2])}<span>${t[1]}</span>${bd[t[0]]?`<b>${bd[t[0]]}</b>`:""}</button>`).join("");
 $("ttl").textContent=TTL[tab][0];$("tsub").textContent=TTL[tab][1];$("upd").textContent=upd?"อัปเดตล่าสุด "+upd.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+" น.":""}
@@ -178,18 +178,19 @@ $("view").innerHTML=ps.length?ps.map(p=>`<div class="m-card"><div class="it">${t
 <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="openDr(${p.l.id})">ดูของหาย</button><button class="btn sm" onclick="openDr(${p.f.id})">ดูของที่พบ</button></div></div>`).join(""):'<div class="card empty">ยังไม่มีรายการที่อาจตรงกัน</div>'}
 
 // ---------- drawer ----------
-function openDr(id){openId=id;editing=false;drawDr();$("ov").classList.add("on");$("dr").classList.add("on")}
-function closeDr(){openId=null;editing=false;$("ov").classList.remove("on");$("dr").classList.remove("on")}
+function openDr(id){openId=id;editing=false;editImg=undefined;drawDr();$("ov").classList.add("on");$("dr").classList.add("on")}
+function closeDr(){openId=null;editing=false;editImg=undefined;$("ov").classList.remove("on");$("dr").classList.remove("on")}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if($("cf").classList.contains("on"))$("cfn").click();else closeDr()}});
 function drawDr(){const i=get(openId);if(!i){closeDr();return}const d=$("dr");
-if(editing){d.innerHTML=`<header><h2>แก้ไขรายการ</h2><button class="ib" onclick="editing=false;drawDr()" aria-label="ปิดฟอร์ม">${ic("x")}</button></header><div class="bd"><div class="fm">
+if(editing){d.innerHTML=`<header><h2>แก้ไขรายการ</h2><button class="ib" onclick="editing=false;editImg=undefined;drawDr()" aria-label="ปิดฟอร์ม">${ic("x")}</button></header><div class="bd"><div class="fm">
+<label>รูปภาพ<input type="file" accept="image/*" onchange="pickImg(this)"></label><div class="ip" id="ip"></div>
 <label>ชื่อสิ่งของ<input id="en" maxlength="80" value="${esc(i.name)}"></label>
 <div class="r2"><label>ประเภท<select id="ec">${opt(Object.keys(CAT).map(p=>[p,p]),i.cat)}</select></label><label>สถานที่<select id="ep">${opt(PL.map(p=>[p,p]),i.place)}</select></label></div>
 <div class="r2"><label>สถานะ<select id="es">${opt(ST.slice(0,3).map((s,k)=>[k,s]),i.st)}</select></label><label>การเผยแพร่<select id="ed">${opt([["0","ประกาศแล้ว"],["1","ฉบับร่าง"]],i.draft?"1":"0")}</select></label></div>
 <label>วันที่และเวลา<input id="ea" type="datetime-local" value="${new Date(new Date(i.at).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16)}"></label>
 <label>รายละเอียด<textarea id="ex" rows="4" maxlength="500">${esc(i.desc)}</textarea></label>
 <label>ช่องทางติดต่อ<input id="et" maxlength="60" value="${esc(i.contact)}"></label></div></div>
-<div class="ft"><button class="btn pri" onclick="saveEdit()">บันทึก</button><button class="btn" onclick="editing=false;drawDr()">ยกเลิก</button></div>`;return}
+<div class="ft"><button class="btn pri" onclick="saveEdit()">บันทึก</button><button class="btn" onclick="editing=false;editImg=undefined;drawDr()">ยกเลิก</button></div>`;prevImg();return}
 const ms=items.filter(o=>o.id!==i.id&&!o.draft&&o.st<3&&match(i,o));
 d.innerHTML=`<header><h2>${esc(i.name)}</h2><button class="ib" onclick="closeDr()" aria-label="ปิด">${ic("x")}</button></header><div class="bd">
 <div class="ph">${i.img?`<img src="${esc(i.img)}" alt="${esc(i.name)}">`:CAT[i.cat]||"📦"}</div>
@@ -197,11 +198,23 @@ d.innerHTML=`<header><h2>${esc(i.name)}</h2><button class="ib" onclick="closeDr(
 <div class="steps">${ST.map((s,k)=>`<div class="${k<=i.st?"d":""}">${s}</div>`).join("")}</div>
 <dl><dt>ประเภท</dt><dd>${esc(i.cat)}</dd><dt>สถานที่</dt><dd>${esc(i.place)}</dd><dt>วันที่</dt><dd>${esc(fd(i.at))}</dd><dt>รายละเอียด</dt><dd>${esc(i.desc)}</dd><dt>ติดต่อ</dt><dd><b>${esc(i.contact)}</b></dd><dt>รหัสรายการ</dt><dd>#${i.id}</dd></dl>
 ${ms.length?`<div class="rel"><b>รายการที่อาจตรงกัน (${ms.length})</b>${ms.map(o=>`<a onclick="openDr(${o.id})">${CAT[o.cat]||""} ${esc(o.name)} · ${esc(o.place)}</a>`).join("")}</div>`:""}</div>
-<div class="ft"><button class="btn" onclick="editing=true;drawDr()">${ic("edit",16)} แก้ไข</button>${!i.draft&&i.st<2?`<button class="btn pri" onclick="advOne(${i.id})">เลื่อนเป็น “${ST[i.st+1]}”</button>`:""}${!i.draft&&i.st===2?`<button class="btn pri" onclick="returned(${i.id})">คืนของแล้ว (ลบรายการ)</button>`:""}<button class="btn bad" onclick="delOne(${i.id})">${ic("trash",16)} ลบ</button></div>`}
+<div class="ft"><button class="btn" onclick="startEdit()">${ic("edit",16)} แก้ไข</button>${!i.draft&&i.st<2?`<button class="btn pri" onclick="advOne(${i.id})">เลื่อนเป็น “${ST[i.st+1]}”</button>`:""}${!i.draft&&i.st===2?`<button class="btn pri" onclick="returned(${i.id})">คืนของแล้ว (ลบรายการ)</button>`:""}<button class="btn bad" onclick="delOne(${i.id})">${ic("trash",16)} ลบ</button></div>`}
+function startEdit(){editing=true;editImg=undefined;drawDr()}
+function prevImg(){const i=get(openId),cur=editImg===undefined?i.img:editImg,b=$("ip");if(!b)return;
+b.innerHTML=cur?`<img src="${esc(cur)}" alt="ตัวอย่างรูป"><button class="btn sm bad" type="button" onclick="editImg=null;prevImg()">ลบรูป</button>`:'<span class="upd">ไม่มีรูป</span>'}
+function pickImg(el){const fl=el.files[0];if(!fl)return;
+const bad=m=>{toast(m);el.value=""};
+if(!/^image\/(jpeg|png|webp|gif)$/.test(fl.type)){bad("รองรับเฉพาะไฟล์รูป JPG, PNG, WEBP หรือ GIF");return}
+if(fl.size>8*1048576){bad("ไฟล์ใหญ่เกิน 8 MB");return}
+const rd=new FileReader();rd.onload=()=>{const im=new Image();
+im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);editImg=c.toDataURL("image/jpeg",.8);prevImg()};
+im.onerror=()=>bad("เปิดไฟล์รูปไม่ได้ ลองไฟล์อื่น");im.src=rd.result};
+rd.onerror=()=>bad("อ่านไฟล์ไม่สำเร็จ");rd.readAsDataURL(fl)}
 async function saveEdit(){const id=openId,n=$("en").value.trim(),t=$("et").value.trim();if(!n||!t){toast("ชื่อสิ่งของและช่องทางติดต่อต้องไม่ว่าง");return}
 const row={name:n,cat:$("ec").value,place:$("ep").value,st:+$("es").value,draft:$("ed").value==="1",at:new Date($("ea").value||Date.now()).toISOString(),desc:$("ex").value.trim()||"ไม่มีรายละเอียดเพิ่มเติม",contact:t};
+if(editImg!==undefined)row.img=editImg;
 const r=await sb.from("items").update(row).eq("id",id).select().single();if(r.error){toast("บันทึกไม่สำเร็จ: "+r.error.message);return}
-items[items.findIndex(x=>x.id===id)]=r.data;editing=false;toast("บันทึกแล้ว");drawDr();view(true)}
+items[items.findIndex(x=>x.id===id)]=r.data;editing=false;editImg=undefined;toast("บันทึกแล้ว");drawDr();view(true)}
 async function advOne(id){const i=get(id),r=await sb.from("items").update({st:i.st+1}).eq("id",id).select().single();if(r.error){toast("อัปเดตไม่สำเร็จ: "+r.error.message);return}
 items[items.findIndex(x=>x.id===id)]=r.data;toast("อัปเดตสถานะแล้ว");drawDr();view(true)}
 async function returned(id){if(!await ask("คืนของแล้ว","รายการจะถูกลบออกจากระบบตามนโยบาย PDPA","ยืนยัน"))return;await delIds([id])}
