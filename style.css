@@ -199,3 +199,7 @@ main{padding-bottom:100px}
 .uside nav button{font-size:.76rem;line-height:1.3}
 .uside .logo{font-size:1rem;line-height:1.3}
 }
+/* โลโก้ให้เด่นบนแถบม่วง: กรอบขาว + เงา เหมือนเมนูที่เลือก */
+.uside .logo img{width:40px;height:40px;border-radius:12px;box-shadow:0 0 0 2px rgba(255,255,255,.92),0 6px 14px rgba(0,0,0,.3)}
+.uside .logo{font-size:.97rem;gap:12px;white-space:nowrap}
+.uside .logo>div{min-width:0}
