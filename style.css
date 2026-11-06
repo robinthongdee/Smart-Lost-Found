@@ -141,3 +141,31 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px var(--acs)}
 :root[data-theme="dark"] .nt.tdo{background:#3a2e10}
 :root[data-theme="dark"] .th.has{background:#222747!important}
 :root[data-theme="dark"] .rl.on{background:var(--acs)}
+
+/* เมนูด้านข้าง (หน้าผู้ใช้) */
+.ushell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.uside{background:linear-gradient(180deg,#1b1763,#2a22a8 70%,#3b32c9);color:#fff;padding:20px 14px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;align-self:start}
+.uside .logo{padding:0 8px;line-height:1.25;font-size:1.02rem}
+.uside nav{display:grid;gap:4px}
+.uside nav button{display:flex;align-items:center;gap:12px;background:none;border:0;border-radius:12px;padding:10px 12px;text-align:left;color:#dcdcff;width:100%}
+.uside nav button:hover{background:rgba(255,255,255,.1);transform:none}
+.uside nav button.on{background:#fff;color:#2a22a8;font-weight:700}
+.uside nav b{margin-left:auto}
+.ni{font-size:1.1rem;width:24px;text-align:center}
+.uwho{margin-top:auto;display:grid;gap:8px}
+.uwho .acc,.uwho .hb2{width:100%;max-width:none;border-radius:12px;padding:9px 12px}
+.uwho .acc{text-align:left}.uwho .hb2{text-align:center}
+@media(max-width:820px){
+.ushell{grid-template-columns:1fr}
+.uside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 16px;gap:8px}
+.uwho{margin:0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.uwho .acc,.uwho .hb2{width:auto;max-width:170px;padding:6px 12px;font-size:.85rem;border-radius:999px}
+.uside nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--sf);border-top:1px solid var(--ln);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));justify-content:space-around;gap:2px;z-index:15;box-shadow:0 -6px 20px rgba(27,31,75,.1)}
+.uside nav button{flex-direction:column;gap:0;width:auto;color:var(--mut);padding:6px 8px;font-size:.76rem;border-radius:10px;position:relative}
+.uside nav button:hover{background:none}
+.uside nav button.on{background:var(--ac);color:var(--bg)}
+.uside nav b{position:absolute;top:0;right:2px;margin:0}
+main{padding-bottom:100px}
+.toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+.ushell>main{width:100%;max-width:920px;min-width:0}
