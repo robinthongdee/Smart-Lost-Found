@@ -143,3 +143,8 @@ dl{display:grid;grid-template-columns:100px 1fr;gap:8px 12px;margin:0}dt{color:v
 
 .ip{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ip img{max-width:150px;max-height:110px;border-radius:12px;border:1px solid var(--ln)}
 .fm input[type=file]{padding:6px}
+
+.brand img{width:36px;height:36px;border-radius:10px;flex:none;display:block}
+
+.thm-m{display:none}
+@media(max-width:820px){.thm-m{display:inline-flex}.who .thm-d{display:none}.side{align-items:center}.side nav button{align-self:center}}

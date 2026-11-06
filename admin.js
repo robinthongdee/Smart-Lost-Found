@@ -68,9 +68,9 @@ async function logout(){await sb.auth.signOut();location.replace(LOGIN)}
 // ---------- shell ----------
 const TABS=[["over","ภาพรวม","grid"],["items","รายการทั้งหมด","list"],["match","จับคู่","link"]];
 const TTL={over:["ภาพรวมระบบ","สรุปสถานการณ์ของหายและของที่พบในมหาวิทยาลัย"],items:["รายการทั้งหมด","ค้นหา กรอง แก้ไข เลื่อนสถานะ และลบได้ทุกรายการ"],match:["รายการที่อาจตรงกัน","คู่ของหาย–ของที่พบที่ระบบกฎคัดมาให้ตรวจ"]};
-function shell(){$("root").innerHTML=`<div class="shell"><aside class="side"><div class="brand"><i>⚙</i><div>Smart Lost &amp; Found<small>ผู้ดูแลระบบ</small></div></div>
-<nav id="nav"></nav><div class="who"><span>เข้าสู่ระบบเป็น</span><b>${esc(me)}</b><button onclick="logout()">${ic("out",16)} ออกจากระบบ</button><button data-themebtn onclick="toggleTheme()">${themeLabel()}</button><a href="index.html">← หน้าผู้ใช้</a></div></aside>
-<div class="main"><div class="top"><div><h1 id="ttl"></h1><p id="tsub"></p></div><div class="acts"><span class="upd" id="upd"></span><button class="btn" id="rf" onclick="refresh()">${ic("refresh",16)} รีเฟรช</button></div></div><section id="view"></section></div></div>`}
+function shell(){$("root").innerHTML=`<div class="shell"><aside class="side"><div class="brand"><img src="logo.png" width="36" height="36" alt=""><div>Smart Lost &amp; Found<small>ผู้ดูแลระบบ</small></div></div>
+<nav id="nav"></nav><div class="who"><span>เข้าสู่ระบบเป็น</span><b>${esc(me)}</b><button onclick="logout()">${ic("out",16)} ออกจากระบบ</button><button class="thm-d" data-themebtn onclick="toggleTheme()">${themeLabel()}</button><a href="index.html">← หน้าผู้ใช้</a></div></aside>
+<div class="main"><div class="top"><div><h1 id="ttl"></h1><p id="tsub"></p></div><div class="acts"><span class="upd" id="upd"></span><button class="btn thm-m" data-themebtn onclick="toggleTheme()">${themeLabel()}</button><button class="btn" id="rf" onclick="refresh()">${ic("refresh",16)} รีเฟรช</button></div></div><section id="view"></section></div></div>`}
 function nav(){const stale=open_().filter(i=>age(i)>=7).length,mt=pairs().length,bd={items:stale,match:mt};
 $("nav").innerHTML=TABS.map(t=>`<button class="${tab===t[0]?"on":""}" onclick="setTab('${t[0]}')">${ic(t[2])}<span>${t[1]}</span>${bd[t[0]]?`<b>${bd[t[0]]}</b>`:""}</button>`).join("");
 $("ttl").textContent=TTL[tab][0];$("tsub").textContent=TTL[tab][1];$("upd").textContent=upd?"อัปเดตล่าสุด "+upd.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+" น.":""}
