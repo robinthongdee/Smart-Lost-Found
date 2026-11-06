@@ -11,7 +11,9 @@ function unreadN(){return pairs().filter(function(p){return seen.indexOf(p.k)<0}
 function markSeen(){pairs().forEach(function(p){if(seen.indexOf(p.k)<0)seen.push(p.k)});save()}
 function fix(x){x.mine=x.owner===uid?1:0;return x}
 async function load(){var r=await sb.from("items").select("*").order("at",{ascending:false});if(r.error){toast("โหลดข้อมูลไม่สำเร็จ: "+r.error.message);return}items=r.data.map(fix)}
-async function init(){try{var s=await sb.auth.getSession();if(!s.data.session){var a=await sb.auth.signInAnonymously();if(a.error)throw a.error;setMe(a.data.user)}else setMe(s.data.session.user);await load()}catch(e){toast("เชื่อมต่อ Supabase ไม่สำเร็จ: "+(e.message||e))}render()}
+async function init(){try{var s=await sb.auth.getSession();if(!s.data.session){var a=await sb.auth.signInAnonymously();if(a.error)throw a.error;setMe(a.data.user)}else setMe(s.data.session.user);await load()}catch(e){toast("เชื่อมต่อ Supabase ไม่สำเร็จ: "+(e.message||e))}
+if(/^#admin/.test(location.hash)){role="admin";view="acct";if(location.hash==="#admin-denied")setTimeout(function(){toast("บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ")},300)}
+render()}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function fd(s){return new Date(s).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+" น."}
 function $(i){return document.getElementById(i)}
