@@ -1,6 +1,6 @@
 // Vercel Serverless Function: จับคู่ของหาย/ของที่พบด้วย AI (Gemini)
 // API key เก็บใน Environment Variable (GEMINI_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
-var MODEL = process.env.AI_MODEL || "gemini-3.5-flash-lite";
+var MODEL = "gemini-3.8-flash";
 var SB_URL = process.env.SUPABASE_URL || "https://htxdnqhzyaxuvomziqzr.supabase.co";
 var SB_KEY = process.env.SUPABASE_KEY || "sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk";
 var VERDICTS = ["match", "maybe", "no_match", "insufficient", "out_of_scope"];
@@ -131,7 +131,7 @@ module.exports = async function (req, res) {
     // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองได้สูงสุด 3 ครั้ง ภายในงบเวลารวมประมาณ 11 วินาที
     // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
     var r = null, t0 = Date.now(), BUDGET = 14000, lastAbort = false;
-    for (var n = 0; n < 3; n++) {
+    for (var n = 0; n < 2; n++) {
       var left = BUDGET - (Date.now() - t0);
       if (n > 0 && left < 2000) break;
       lastAbort = false;
@@ -143,7 +143,7 @@ module.exports = async function (req, res) {
         r = null;
       }
       if (r && (r.ok || [500, 503].indexOf(r.status) < 0)) break;
-      console.error("Gemini slow/busy, attempt", n + 1, r ? r.status : "timeout");
+      console.error("Gemini slow/busy", MODEL, "attempt", n + 1, r ? r.status : "timeout");
       if (r) await new Promise(function (ok) { setTimeout(ok, 700 * (n + 1)); });
     }
     if (!r) {
