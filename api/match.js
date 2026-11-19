@@ -1,6 +1,8 @@
 // Vercel Serverless Function: จับคู่ของหาย/ของที่พบด้วย AI (Gemini)
 // API key เก็บใน Environment Variable (GEMINI_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
-var MODEL = "gemini-2.5-flash-lite"; // ฝังชื่อโมเดลในโค้ด ไม่ใช้ AI_MODEL จาก Vercel (กันค่าเก่าค้างแล้วได้ 404)
+// ลองตามลำดับ: ถ้าตัวไหน 404/429/500/503 หรือช้า จะสลับไปตัวถัดไปอัตโนมัติ (แต่ละรุ่นมีโควตาแยกกัน)
+// ใช้เฉพาะรุ่น Gemini 3 ที่ยังเปิดอยู่ (รุ่น 2.5 ถูกปิดแล้ว จะได้ 404)
+var MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
 var SB_URL = process.env.SUPABASE_URL || "https://htxdnqhzyaxuvomziqzr.supabase.co";
 var SB_KEY = process.env.SUPABASE_KEY || "sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk";
 var VERDICTS = ["match", "maybe", "no_match", "insufficient", "out_of_scope"];
@@ -65,11 +67,11 @@ async function authed(req) {
 }
 
 // ms = เวลารอสูงสุดต่อครั้ง (เป้าหมายรวมไม่เกิน 10 วินาที: ครั้งแรก 5 วิ แล้วลองใหม่ได้อีก 1 ครั้ง)
-async function ask(p, key, ms) {
+async function ask(p, key, ms, model) {
   var ac = new AbortController();
   var t = setTimeout(function () { ac.abort(); }, ms);
   try {
-    return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
+    return await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
       method: "POST",
       signal: ac.signal,
       headers: { "content-type": "application/json", "x-goog-api-key": key },
@@ -122,29 +124,31 @@ module.exports = async function (req, res) {
       temperature: 0,
       maxOutputTokens: 400,
       responseMimeType: "application/json",
-      thinkingConfig: { thinkingBudget: 0 } // รุ่น 2.5 ใช้ thinkingBudget (0 = ปิดการคิด) ถ้าใช้ thinkingLevel จะได้ 400
+      thinkingConfig: { thinkingLevel: "low" }
     }
   };
 
   var j;
   try {
     // Gemini ช้าหรือยุ่งชั่วคราว (500/503): ลองได้สูงสุด 3 ครั้ง ภายในงบเวลารวมประมาณ 11 วินาที
-    // 429 (โควตาต่อนาทีเต็ม) ไม่ลองซ้ำ เพราะการลองซ้ำนับเป็นคำขอเพิ่มและทำให้โควตาเต็มนานขึ้น
+    // ถ้า 404/429/500/503 หรือช้า ให้สลับไปโมเดลตัวถัดไป (คนละโควตา)
     var r = null, t0 = Date.now(), BUDGET = 14000, lastAbort = false;
-    for (var n = 0; n < 3; n++) {
+    for (var n = 0; n < MODELS.length; n++) {
+      var model = MODELS[n];
       var left = BUDGET - (Date.now() - t0);
       if (n > 0 && left < 2000) break;
       lastAbort = false;
       try {
-        r = await ask(payload, key, Math.min(n === 0 ? 8000 : 5000, left)); // ครั้งแรกรอได้ 8 วิ (ช่วง Gemini ช้า ผลมักมาที่ 6-9 วิ)
+        r = await ask(payload, key, Math.min(n === 0 ? 8000 : 5000, left), model); // ครั้งแรกรอได้ 8 วิ (ช่วง Gemini ช้า ผลมักมาที่ 6-9 วิ)
       } catch (e) {
         if (!e || e.name !== "AbortError") throw e;
         lastAbort = true; // ช้าเกิน 5 วินาที: ยกเลิกแล้วลองใหม่ (คำขอใหม่มักตอบเร็วกว่า)
         r = null;
       }
-      if (r && (r.ok || [500, 503].indexOf(r.status) < 0)) break;
-      console.error("Gemini slow/busy", MODEL, "attempt", n + 1, r ? r.status : "timeout");
-      if (r) await new Promise(function (ok) { setTimeout(ok, 700 * (n + 1)); });
+      if (r && (r.ok || [404, 429, 500, 503].indexOf(r.status) < 0)) break;
+      console.error("Gemini slow/busy", model, "attempt", n + 1, r ? r.status : "timeout");
+      if (r) console.error("Gemini body", model, (await r.text()).slice(0, 200));
+      if (r) await new Promise(function (ok) { setTimeout(ok, 300); });
     }
     if (!r) {
       return res.status(502).json({ error: lastAbort ? "AI ตอบช้าเกินไป ลองใหม่อีกครั้ง" : "เรียก AI ไม่สำเร็จ" });
