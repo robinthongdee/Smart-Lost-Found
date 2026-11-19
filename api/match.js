@@ -2,7 +2,7 @@
 // API key เก็บใน Environment Variable (GEMINI_API_KEY) ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่เบราว์เซอร์
 // ลองตามลำดับ: ถ้าตัวไหน 404/429/500/503 หรือช้า จะสลับไปตัวถัดไปอัตโนมัติ (แต่ละรุ่นมีโควตาแยกกัน)
 // ใช้เฉพาะรุ่น Gemini 3 ที่ยังเปิดอยู่ (รุ่น 2.5 ถูกปิดแล้ว จะได้ 404)
-var MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+var MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.6-flash"];
 var SB_URL = process.env.SUPABASE_URL || "https://htxdnqhzyaxuvomziqzr.supabase.co";
 var SB_KEY = process.env.SUPABASE_KEY || "sb_publishable_AyNg4TJiuiw54uEsaq7kcQ_Sns--xgk";
 var VERDICTS = ["match", "maybe", "no_match", "insufficient", "out_of_scope"];
